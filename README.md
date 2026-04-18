@@ -57,6 +57,28 @@ Get a key at [apiportal.ns.nl](https://apiportal.ns.nl) → subscribe to the Rei
 
 ---
 
+## Project structure
+
+```
+/app
+  /_components        # UI — TabBar, TweaksPanel, shared departure rows
+    /views            # Full-screen views: Rhythm, Pulse, Journey, Station
+    /icons            # SVG icon components
+    /shared           # Reusable display components (DepartureRow, NowPill, etc.)
+  /_lib               # Analytics and WebVitals wrappers
+  /_utils             # Rail API client (getStationCodes), mock data generators
+  /api                # Next.js route handlers
+    /departures/[code]  # Live departures for a station
+    /disruptions        # Live disruptions, falls back to mock
+    /stations           # Station search
+  /interfaces         # Shared TypeScript interfaces
+  /styles             # SCSS modules
+/config               # App-level config (analytics ID)
+/public               # Static assets, PWA manifest
+```
+
+---
+
 ## Design
 
 Tokens in `app/globals.css`. Key variables:
