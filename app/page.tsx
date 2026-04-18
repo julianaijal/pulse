@@ -9,7 +9,9 @@ import RhythmView from './_components/views/RhythmView';
 import PulseView from './_components/views/PulseView';
 import JourneyView from './_components/views/JourneyView';
 import StationView, { StationSearch } from './_components/views/StationView';
-import { IconTweaks } from './_components/icons/Icons';
+import {
+  IconRhythm, IconPulse, IconJourney, IconSearch, IconTweaks,
+} from './_components/icons/Icons';
 
 type Tab = 'rhythm' | 'pulse' | 'journey' | 'station' | 'search';
 
@@ -30,18 +32,25 @@ const TWEAK_DEFAULTS: ITweaks = {
 function loadTweaks(): ITweaks {
   if (typeof window === 'undefined') return TWEAK_DEFAULTS;
   return {
-    theme: (localStorage.getItem('pulse.theme') as ITweaks['theme']) ?? TWEAK_DEFAULTS.theme,
-    verbosity: (localStorage.getItem('pulse.verbosity') as ITweaks['verbosity']) ?? TWEAK_DEFAULTS.verbosity,
-    crowdingStyle: (localStorage.getItem('pulse.crowdingStyle') as ITweaks['crowdingStyle']) ?? TWEAK_DEFAULTS.crowdingStyle,
-    accent: (localStorage.getItem('pulse.accent') as ITweaks['accent']) ?? TWEAK_DEFAULTS.accent,
+    theme:        (localStorage.getItem('pulse.theme')        as ITweaks['theme'])        ?? TWEAK_DEFAULTS.theme,
+    verbosity:    (localStorage.getItem('pulse.verbosity')    as ITweaks['verbosity'])    ?? TWEAK_DEFAULTS.verbosity,
+    crowdingStyle:(localStorage.getItem('pulse.crowdingStyle')as ITweaks['crowdingStyle'])?? TWEAK_DEFAULTS.crowdingStyle,
+    accent:       (localStorage.getItem('pulse.accent')       as ITweaks['accent'])       ?? TWEAK_DEFAULTS.accent,
   };
 }
 
+const NAV_ITEMS = [
+  { id: 'rhythm',  label: 'Rhythm',  Icon: IconRhythm  },
+  { id: 'pulse',   label: 'Pulse',   Icon: IconPulse   },
+  { id: 'journey', label: 'Journey', Icon: IconJourney },
+  { id: 'search',  label: 'Search',  Icon: IconSearch  },
+] as const;
+
 export default function Home() {
-  const [tweaks, setTweaks] = useState<ITweaks>(TWEAK_DEFAULTS);
-  const [tab, setTab] = useState<Tab>('rhythm');
-  const [journey, setJourney] = useState<IDeparture | null>(null);
-  const [station, setStation] = useState<StationObj | null>(null);
+  const [tweaks, setTweaks]       = useState<ITweaks>(TWEAK_DEFAULTS);
+  const [tab, setTab]             = useState<Tab>('rhythm');
+  const [journey, setJourney]     = useState<IDeparture | null>(null);
+  const [station, setStation]     = useState<StationObj | null>(null);
   const [showTweaks, setShowTweaks] = useState(false);
 
   // Hydrate from localStorage after mount
@@ -53,12 +62,8 @@ export default function Home() {
     }
   }, []);
 
-  // Persist tab
-  useEffect(() => {
-    localStorage.setItem('pulse.tab', tab);
-  }, [tab]);
+  useEffect(() => { localStorage.setItem('pulse.tab', tab); }, [tab]);
 
-  // Apply theme and accent to document
   useEffect(() => {
     document.documentElement.dataset.theme = tweaks.theme;
     document.documentElement.style.setProperty('--accent', ACCENT_MAP[tweaks.accent] ?? ACCENT_MAP.orange);
@@ -69,58 +74,80 @@ export default function Home() {
     localStorage.setItem(`pulse.${key}`, value);
   };
 
-  const openJourney = (train: IDeparture) => {
-    setJourney(train);
-    setTab('journey');
+  const openJourney = (train: IDeparture) => { setJourney(train); setTab('journey'); };
+  const openStation = (s: StationObj)     => { setStation(s);  setTab('station'); };
+
+  const goTo = (id: string) => {
+    if (id === 'search')  { setStation(null); setTab('search'); }
+    else if (id === 'journey') setTab(journey ? 'journey' : 'rhythm');
+    else setTab(id as Tab);
   };
 
-  const openStation = (s: StationObj) => {
-    setStation(s);
-    setTab('station');
-  };
+  // Active tab for nav highlighting (station renders under pulse)
+  const activeNav = tab === 'station' ? 'pulse' : tab;
 
   let content: React.ReactNode;
-  if (tab === 'rhythm') {
-    content = <RhythmView tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
-  } else if (tab === 'pulse') {
-    content = <PulseView tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
-  } else if (tab === 'journey') {
-    content = <JourneyView train={journey} tweaks={tweaks} onBack={() => setTab('rhythm')} />;
-  } else if (tab === 'station') {
-    content = <StationView station={station} tweaks={tweaks} onBack={() => setTab('pulse')} onOpenJourney={openJourney} />;
-  } else if (tab === 'search') {
-    content = <StationSearch onBack={() => setTab('rhythm')} onPick={openStation} />;
-  }
-
-  // Map tab to TabBar's tab type (station → pulse for active state purposes)
-  const activeTab = (tab === 'station' ? 'pulse' : tab) as 'rhythm' | 'pulse' | 'journey' | 'search';
+  if      (tab === 'rhythm')  content = <RhythmView  tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
+  else if (tab === 'pulse')   content = <PulseView   tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
+  else if (tab === 'journey') content = <JourneyView train={journey} tweaks={tweaks} onBack={() => setTab('rhythm')} />;
+  else if (tab === 'station') content = <StationView station={station} tweaks={tweaks} onBack={() => setTab('pulse')} onOpenJourney={openJourney} />;
+  else if (tab === 'search')  content = <StationSearch onBack={() => setTab('rhythm')} onPick={openStation} />;
 
   return (
-    <>
-      {content}
+    <div className="pulse-shell">
 
-      <TabBar
-        tab={activeTab}
-        hasJourney={journey !== null}
-        onTabChange={(t) => {
-          if (t === 'search') { setStation(null); setTab('search'); }
-          else setTab(t);
-        }}
-      />
+      {/* ── Desktop sidebar ─────────────────────────────── */}
+      <aside className="pulse-sidebar">
+        {/* Logo */}
+        <div className="pulse-sidebar-logo">
+          <span className="serif" style={{ fontSize: 22, lineHeight: 1, letterSpacing: '-0.02em' }}>
+            Pulse<em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>.</em>
+          </span>
+        </div>
 
-      {/* Tweaks toggle */}
+        {/* Nav */}
+        <nav className="pulse-sidebar-nav">
+          {NAV_ITEMS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              className="pulse-sidebar-item"
+              data-active={activeNav === id}
+              onClick={() => goTo(id)}
+            >
+              <Icon style={{ width: 20, height: 20 }} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Tweaks */}
+        <button
+          className="pulse-sidebar-item"
+          data-active={showTweaks}
+          onClick={() => setShowTweaks(v => !v)}
+        >
+          <IconTweaks style={{ width: 20, height: 20 }} />
+          <span>Tweaks</span>
+        </button>
+      </aside>
+
+      {/* ── Main content ─────────────────────────────────── */}
+      <main className="pulse-main">
+        {content}
+        <TabBar
+          tab={activeNav as 'rhythm' | 'pulse' | 'journey' | 'search'}
+          hasJourney={journey !== null}
+          onTabChange={goTo}
+        />
+      </main>
+
+      {/* Mobile tweaks FAB (hidden on desktop via CSS) */}
       <button
+        className="pulse-tweaks-fab"
         onClick={() => setShowTweaks(v => !v)}
-        style={{
-          position: 'fixed',
-          bottom: `calc(80px + env(safe-area-inset-bottom))`,
-          right: 12,
-          width: 36, height: 36,
-          background: 'var(--bg-2)', border: '1px solid var(--line)',
-          borderRadius: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--ink-2)', zIndex: 60,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        }}
         aria-label="Open tweaks"
       >
         <IconTweaks style={{ width: 16, height: 16 }} />
@@ -129,6 +156,6 @@ export default function Home() {
       {showTweaks && (
         <TweaksPanel tweaks={tweaks} onChange={updateTweak} onClose={() => setShowTweaks(false)} />
       )}
-    </>
+    </div>
   );
 }

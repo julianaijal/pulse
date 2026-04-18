@@ -41,7 +41,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        {children}
+        <div id="app-root">
+          {children}
+        </div>
         <AnalyticsWrapper />
         <WebVitals />
       </body>

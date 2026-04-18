@@ -93,8 +93,8 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
         </div>
       </div>
 
-      {/* Network stats bar */}
-      <div style={{
+      {/* Network stats bar — mobile only (desktop shows in side panel) */}
+      <div className="pulse-stats-bar" style={{
         padding: '0 0 0 0', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
         borderTop: '1px solid var(--line-2)', borderBottom: '1px solid var(--line-2)', marginTop: 4,
       }}>
@@ -103,8 +103,11 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
         <NetStat big={String(disruptions.filter(d => d.severity > 0).length)} label="disruptions" borderLeft />
       </div>
 
-      {/* Map */}
-      <div style={{ position: 'relative' }}>
+      {/* ── Map + disruptions (side-by-side on desktop) ── */}
+      <div className="pulse-map-layout">
+
+      {/* Map area */}
+      <div className="pulse-map-area" style={{ position: 'relative' }}>
         <svg
           viewBox="0 0 400 520"
           preserveAspectRatio="xMidYMid meet"
@@ -273,27 +276,50 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
             </button>
           </div>
         )}
-      </div>
+      </div>{/* /pulse-map-area */}
 
-      {/* Disruption list */}
-      <div style={{ padding: '20px 20px 12px' }}>
+      {/* Disruption side panel */}
+      <div className="pulse-side-panel">
         <div className="eyebrow" style={{ marginBottom: 10 }}>Today&apos;s weather</div>
+
+        {/* Network stats — repeated in side panel for desktop context */}
+        <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+          <div>
+            <div className="serif num" style={{ fontSize: 22, lineHeight: 1 }}>{trains.length}</div>
+            <div className="eyebrow" style={{ marginTop: 2 }}>in motion</div>
+          </div>
+          <div style={{ borderLeft: '1px solid var(--line-2)', paddingLeft: 16 }}>
+            <div className="serif num" style={{ fontSize: 22, lineHeight: 1 }}>{onTimeRate}%</div>
+            <div className="eyebrow" style={{ marginTop: 2 }}>on time</div>
+          </div>
+          <div style={{ borderLeft: '1px solid var(--line-2)', paddingLeft: 16 }}>
+            <div className="serif num" style={{ fontSize: 22, lineHeight: 1 }}>{disruptions.filter(d => d.severity > 0).length}</div>
+            <div className="eyebrow" style={{ marginTop: 2 }}>disruptions</div>
+          </div>
+        </div>
+
+        <div className="hairline" style={{ marginBottom: 16 }} />
+
         {disruptions.map(d => (
           <div key={d.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line-2)', display: 'flex', gap: 12 }}>
             <WeatherGlyph type={d.type} />
             <div style={{ flex: 1 }}>
-              <div className="serif" style={{ fontSize: 16, lineHeight: 1.25 }}>{d.label}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--ink-2)', marginTop: 3, lineHeight: 1.4 }}>{d.message}</div>
-            </div>
-            <div className="mono" style={{
-              fontSize: 11, whiteSpace: 'nowrap',
-              color: d.severity > 0.5 ? 'var(--accent)' : d.severity > 0 ? 'var(--warn)' : 'var(--ok)',
-            }}>
-              {d.impact}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
+                <div className="serif" style={{ fontSize: 15, lineHeight: 1.25 }}>{d.label}</div>
+                <div className="mono" style={{
+                  fontSize: 10.5, whiteSpace: 'nowrap', flexShrink: 0,
+                  color: d.severity > 0.5 ? 'var(--accent)' : d.severity > 0 ? 'var(--warn)' : 'var(--ok)',
+                }}>
+                  {d.impact}
+                </div>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>{d.message}</div>
             </div>
           </div>
         ))}
-      </div>
+      </div>{/* /pulse-side-panel */}
+
+      </div>{/* /pulse-map-layout */}
 
       <div style={{ height: 80 }} />
     </div>

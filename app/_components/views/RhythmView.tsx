@@ -61,7 +61,7 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
 
   return (
     <div className="view fade-up">
-      {/* Masthead */}
+      {/* Masthead — full width */}
       <div style={{ padding: '24px 20px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div className="eyebrow" style={{ marginBottom: 4 }}>{dateLabel}</div>
@@ -75,33 +75,39 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
         <span className="now-pill"><span className="dot live" /> {timeLabel}</span>
       </div>
 
-      {/* Your commute — hero */}
-      <div style={{ padding: '8px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-          <div className="eyebrow">Your commute</div>
-          <div className="eyebrow" style={{ color: 'var(--ink-2)' }}>{rhythm.usualDuration} MIN · {rhythm.historyWeeks} WKS</div>
-        </div>
-        {yourTrain ? (
-          <YourTrainCard train={yourTrain} rhythm={rhythm} now={now} onClick={() => onOpenJourney(yourTrain)} tweaks={tweaks} />
-        ) : (
-          <div className="card" style={{ padding: 20, height: 180 }}>
-            <div className="skeleton" style={{ height: 40, marginBottom: 12 }} />
-            <div className="skeleton" style={{ height: 20, width: '60%', marginBottom: 8 }} />
-            <div className="skeleton" style={{ height: 20, width: '40%' }} />
+      {/* ── Desktop 2-column grid ─────────────────── */}
+      <div className="rhythm-grid">
+
+        {/* Left column: hero + anomaly */}
+        <div className="rhythm-col-l">
+          <div style={{ padding: '8px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div className="eyebrow">Your commute</div>
+              <div className="eyebrow" style={{ color: 'var(--ink-2)' }}>{rhythm.usualDuration} MIN · {rhythm.historyWeeks} WKS</div>
+            </div>
+            {yourTrain ? (
+              <YourTrainCard train={yourTrain} rhythm={rhythm} now={now} onClick={() => onOpenJourney(yourTrain)} tweaks={tweaks} />
+            ) : (
+              <div className="card" style={{ padding: 20, height: 180 }}>
+                <div className="skeleton" style={{ height: 40, marginBottom: 12 }} />
+                <div className="skeleton" style={{ height: 20, width: '60%', marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 20, width: '40%' }} />
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Anomaly */}
-      {yourTrain && yourTrain.delayMinutes >= 2 && (
-        <AnomalyBlock train={yourTrain} alternatives={alternatives.slice(1)} />
-      )}
+          {yourTrain && yourTrain.delayMinutes >= 2 && (
+            <AnomalyBlock train={yourTrain} alternatives={alternatives.slice(1)} />
+          )}
+        </div>
 
-      {/* Baseline stats */}
-      <BaselineBlock rhythm={rhythm} />
+        {/* Right column: baseline + later today */}
+        <div className="rhythm-col-r">
+          <BaselineBlock rhythm={rhythm} />
+          <LaterToday departures={departures} onOpen={onOpenJourney} tweaks={tweaks} />
+        </div>
 
-      {/* Later today */}
-      <LaterToday departures={departures} onOpen={onOpenJourney} tweaks={tweaks} />
+      </div>{/* /rhythm-grid */}
 
       <div style={{ height: 80 }} />
     </div>
