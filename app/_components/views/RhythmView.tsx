@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { IDeparture, ITweaks } from '../../interfaces/interfaces';
 import { generateDepartures, USER_RHYTHM } from '../../_utils/mock';
 import { IconArrow } from '../icons/Icons';
-import CrowdingStrip, { crowdingColor } from '../shared/CrowdingStrip';
+import CrowdingStrip from '../shared/CrowdingStrip';
 import DepartureRow from '../shared/DepartureRow';
 
 interface RhythmViewProps {
