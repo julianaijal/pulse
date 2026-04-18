@@ -21,7 +21,7 @@ Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript)
-- **NS API** — live departures, stations, disruptions
+- **Rail data API** — live departures, stations, disruptions
 - **CSS custom properties** — OKLCH token system, light + dark theme
 - **Google Fonts** — Instrument Serif, JetBrains Mono, Inter
 - **Vercel**
@@ -38,22 +38,7 @@ npm run build    # production build + type check
 
 ### Environment
 
-```bash
-# .env.local
-NS_API=your_ns_api_key
-```
-
-Get a key at [apiportal.ns.nl](https://apiportal.ns.nl) → subscribe to the Reisinformatie API. Without a key the app falls back to mock data — all views still work.
-
----
-
-## API routes
-
-| Route | Description |
-|-------|-------------|
-| `GET /api/stations?q=` | Station search (proxies NS API) |
-| `GET /api/departures/[code]` | Live departures for a station code |
-| `GET /api/disruptions` | Live disruptions; falls back to mock |
+Set up your `.env.local` with the required API credentials. Without them the app falls back to mock data — all views still work.
 
 ---
 
