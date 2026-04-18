@@ -15,25 +15,30 @@ interface Entry {
 
 const cache = new LRU({ max: 5000 });
 
-export function rateLimit(ip: string): { allowed: boolean; remaining: number } {
+export function rateLimit(ip: string | null): { allowed: boolean } {
+  // No identifiable IP — allow through (Vercel always sets x-forwarded-for in prod)
+  if (ip === null) return { allowed: true };
+
   const now = Date.now();
   const entry = cache.get(ip);
 
   if (!entry || now - entry.windowStart > WINDOW_MS) {
     cache.set(ip, { count: 1, windowStart: now });
-    return { allowed: true, remaining: MAX_REQUESTS - 1 };
+    return { allowed: true };
   }
 
   if (entry.count >= MAX_REQUESTS) {
-    return { allowed: false, remaining: 0 };
+    return { allowed: false };
   }
 
   cache.set(ip, { count: entry.count + 1, windowStart: entry.windowStart });
-  return { allowed: true, remaining: MAX_REQUESTS - entry.count - 1 };
+  return { allowed: true };
 }
 
-export function getClientIp(req: { headers: { get(name: string): string | null } }): string {
+// Returns the original client IP from x-forwarded-for, or null if not present.
+// In a Vercel deployment x-forwarded-for is always injected by the edge network.
+export function getClientIp(req: { headers: { get(name: string): string | null } }): string | null {
   const forwarded = req.headers.get("x-forwarded-for");
-  // Take the first IP in the chain (the original client)
-  return forwarded?.split(",")[0]?.trim() ?? "unknown";
+  const ip = forwarded?.split(",")[0]?.trim();
+  return ip ?? null;
 }
