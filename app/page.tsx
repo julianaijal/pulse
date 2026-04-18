@@ -135,7 +135,7 @@ export default function Home() {
       </aside>
 
       {/* ── Main content ─────────────────────────────────── */}
-      <main className="pulse-main">
+      <main id="main-content" tabIndex={-1} className="pulse-main">
         {content}
         <TabBar
           tab={activeNav as 'rhythm' | 'pulse' | 'journey' | 'search'}

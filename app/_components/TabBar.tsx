@@ -11,24 +11,31 @@ interface TabBarProps {
   onTabChange: (tab: Tab) => void;
 }
 
+const TABS: { id: Tab; label: string; Icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }[] = [
+  { id: 'rhythm',  label: 'Rhythm',  Icon: IconRhythm  },
+  { id: 'pulse',   label: 'Pulse',   Icon: IconPulse   },
+  { id: 'journey', label: 'Journey', Icon: IconJourney },
+  { id: 'search',  label: 'Search',  Icon: IconSearch  },
+];
+
 export default function TabBar({ tab, hasJourney, onTabChange }: TabBarProps) {
   return (
-    <nav className="tabbar">
-      <button data-active={tab === 'rhythm'} onClick={() => onTabChange('rhythm')}>
-        <IconRhythm /><span>Rhythm</span>
-      </button>
-      <button data-active={tab === 'pulse'} onClick={() => onTabChange('pulse')}>
-        <IconPulse /><span>Pulse</span>
-      </button>
-      <button
-        data-active={tab === 'journey'}
-        onClick={() => onTabChange(hasJourney ? 'journey' : 'rhythm')}
-      >
-        <IconJourney /><span>Journey</span>
-      </button>
-      <button data-active={tab === 'search'} onClick={() => onTabChange('search')}>
-        <IconSearch /><span>Search</span>
-      </button>
+    <nav className="tabbar" aria-label="Main navigation">
+      <div role="tablist">
+        {TABS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            role="tab"
+            id={`tab-${id}`}
+            aria-selected={tab === id}
+            aria-controls="main-content"
+            data-active={tab === id}
+            onClick={() => onTabChange(id === 'journey' ? (hasJourney ? 'journey' : 'rhythm') : id)}
+          >
+            <Icon aria-hidden="true" /><span>{label}</span>
+          </button>
+        ))}
+      </div>
     </nav>
   );
 }
