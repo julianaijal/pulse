@@ -106,7 +106,7 @@ export default function Home() {
         </div>
 
         {/* Nav */}
-        <nav className="pulse-sidebar-nav">
+        <nav className="pulse-sidebar-nav" aria-label="Main navigation">
           {NAV_ITEMS.map(({ id, label, Icon }) => (
             <button
               key={id}
@@ -114,7 +114,7 @@ export default function Home() {
               data-active={activeNav === id}
               onClick={() => goTo(id)}
             >
-              <Icon style={{ width: 20, height: 20 }} />
+              <Icon aria-hidden="true" style={{ width: 20, height: 20 }} />
               <span>{label}</span>
             </button>
           ))}
@@ -129,7 +129,7 @@ export default function Home() {
           data-active={showTweaks}
           onClick={() => setShowTweaks(v => !v)}
         >
-          <IconTweaks style={{ width: 20, height: 20 }} />
+          <IconTweaks aria-hidden="true" style={{ width: 20, height: 20 }} />
           <span>Tweaks</span>
         </button>
       </aside>

@@ -28,7 +28,6 @@ export default function TabBar({ tab, hasJourney, onTabChange }: TabBarProps) {
             role="tab"
             id={`tab-${id}`}
             aria-selected={tab === id}
-            aria-controls="main-content"
             data-active={tab === id}
             onClick={() => onTabChange(id === 'journey' ? (hasJourney ? 'journey' : 'rhythm') : id)}
           >
