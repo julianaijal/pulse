@@ -104,7 +104,9 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
       {/* Delay propagation */}
       {train.delayMinutes > 0 && (
         <div style={{ padding: '20px 20px 0' }}>
-          <h2 className="eyebrow" style={{ marginBottom: 10, color: 'var(--accent)' }}>⁕ Why you&apos;re late</h2>
+          <h2 className="eyebrow" style={{ marginBottom: 10, color: 'var(--accent)' }}>
+            <span aria-hidden="true">⁕ </span>Why you&apos;re late
+          </h2>
           <div className="card" style={{ padding: 16, background: 'color-mix(in oklab, var(--accent) 4%, var(--bg-2))', borderColor: 'var(--accent-dim)' }}>
             <div className="serif" style={{ fontSize: 17, lineHeight: 1.35 }}>
               Signaling disruption near <em>Duivendrecht</em> cascaded north. Your train inherited{' '}
@@ -121,11 +123,13 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
       {/* Timeline */}
       <div style={{ padding: '24px 20px 0' }}>
         <h2 className="eyebrow" style={{ marginBottom: 12 }}>Journey timeline · {stops.length} stops</h2>
-        <div style={{ position: 'relative' }}>
+        <ol style={{ position: 'relative', listStyle: 'none', padding: 0, margin: 0 }}>
           {stops.map((s, i) => (
-            <StopRow key={s.code} stop={s} last={i === stops.length - 1} delayed={train.delayMinutes} />
+            <li key={s.code}>
+              <StopRow stop={s} last={i === stops.length - 1} delayed={train.delayMinutes} />
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
 
       <div style={{ height: 80 }} />

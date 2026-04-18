@@ -167,7 +167,7 @@ function YourTrainCard({ train, rhythm, now, onClick, tweaks }: YourTrainCardPro
   const crowding = train.crowding ?? [];
 
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} aria-label={`Jouw trein naar ${train.direction}, vertrekt ${timeStr}${late > 0 ? `, ${late} minuten vertraging` : ', op tijd'}. Klik voor reisdetails.`} style={{
       width: '100%', textAlign: 'left', padding: 0,
       background: 'var(--ink)', color: 'var(--bg)',
       borderRadius: 18, overflow: 'hidden',
@@ -196,7 +196,7 @@ function YourTrainCard({ train, rhythm, now, onClick, tweaks }: YourTrainCardPro
           <div
             aria-live="polite"
             aria-atomic="true"
-            aria-label="Train status"
+            aria-label={late > 0 ? `${late} minuten vertraging` : 'op tijd'}
             className="mono num"
             style={{
               fontSize: 13, fontWeight: 600,
@@ -242,13 +242,19 @@ function AnomalyBlock({ train, alternatives }: { train: IDeparture; alternatives
   const best = alternatives[0];
   return (
     <div style={{ padding: '16px 20px 4px' }}>
-      <div className="eyebrow" style={{ marginBottom: 10, color: 'var(--accent)' }}>⁕ Anomaly vs. your baseline</div>
-      <div className="card" style={{ padding: 16, borderColor: 'var(--accent-dim)', background: 'color-mix(in oklab, var(--accent) 5%, var(--bg-2))' }}>
+      <div className="eyebrow" style={{ marginBottom: 10, color: 'var(--accent)' }}>
+        <span aria-hidden="true">⁕ </span>Anomaly vs. your baseline
+      </div>
+      <div
+        role="alert"
+        className="card"
+        style={{ padding: 16, borderColor: 'var(--accent-dim)', background: 'color-mix(in oklab, var(--accent) 5%, var(--bg-2))' }}
+      >
         <div className="serif" style={{ fontSize: 18, lineHeight: 1.3 }}>
           Your 8:14 runs <em>{train.delayMinutes} min late</em>{best ? ', and the next one is slightly emptier.' : '.'}
         </div>
         {best && (
-          <button style={{
+          <button aria-label={`Wissel naar de ${new Date(best.actualDateTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })} ${best.trainCategory} in plaats van jouw vertraagde trein`} style={{
             marginTop: 12, width: '100%', padding: '10px 14px',
             background: 'var(--ink)', color: 'var(--bg)', borderRadius: 10,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -278,13 +284,13 @@ function BaselineBlock({ rhythm }: { rhythm: typeof USER_RHYTHM }) {
 
 function StatCell({ big, suffix, label }: { big: string; suffix: string; label: string }) {
   return (
-    <div className="card" style={{ padding: '12px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+    <dl className="card" style={{ padding: '12px 14px' }}>
+      <dt className="eyebrow" style={{ marginBottom: 4 }}>{label}</dt>
+      <dd style={{ display: 'flex', alignItems: 'baseline', gap: 2, margin: 0 }}>
         <span className="serif num" style={{ fontSize: 32, lineHeight: 1, letterSpacing: '-0.02em' }}>{big}</span>
         <span className="mono" style={{ fontSize: 11, color: 'var(--ink-3)' }}>{suffix}</span>
-      </div>
-      <div className="eyebrow" style={{ marginTop: 4 }}>{label}</div>
-    </div>
+      </dd>
+    </dl>
   );
 }
 

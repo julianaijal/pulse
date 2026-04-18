@@ -135,7 +135,13 @@ export default function Home() {
       </aside>
 
       {/* ── Main content ─────────────────────────────────── */}
-      <main id="main-content" tabIndex={-1} className="pulse-main">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="pulse-main"
+        role="tabpanel"
+        aria-labelledby={`tab-${activeNav}`}
+      >
         {content}
         <TabBar
           tab={activeNav as 'rhythm' | 'pulse' | 'journey' | 'search'}
