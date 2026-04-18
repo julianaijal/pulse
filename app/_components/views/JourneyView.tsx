@@ -45,7 +45,7 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
       {/* Header */}
       <div style={{ padding: '18px 20px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button onClick={onBack} style={{ padding: '6px 0', color: 'var(--ink-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <IconBack style={{ width: 18, height: 18 }} />
+          <IconBack aria-hidden="true" style={{ width: 18, height: 18 }} />
           <span className="eyebrow" style={{ color: 'var(--ink-2)' }}>Back</span>
         </button>
         <span className="now-pill"><span className="dot live" /> tracking</span>
@@ -56,16 +56,16 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
         <div className="eyebrow" style={{ marginBottom: 6 }}>
           {train.trainCategory} · TRAIN {train.trainId ?? '3523'}
         </div>
-        <div className="serif" style={{ fontSize: 36, lineHeight: 1.05, letterSpacing: '-0.02em' }}>
+        <h1 className="serif" style={{ fontSize: 36, lineHeight: 1.05, letterSpacing: '-0.02em' }}>
           <em style={{ fontStyle: 'italic' }}>{stops[0].name}</em>
           <span style={{ color: 'var(--ink-3)' }}> → </span>
           <em style={{ fontStyle: 'italic' }}>{train.direction}</em>
-        </div>
+        </h1>
         <div style={{ marginTop: 10, display: 'flex', gap: 14, alignItems: 'baseline' }}>
           <div className="serif num" style={{ fontSize: 28, letterSpacing: '-0.02em' }}>
             {actual.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
           </div>
-          <div className="mono" style={{ fontSize: 12, color: train.delayMinutes > 0 ? 'var(--accent)' : 'var(--ok)' }}>
+          <div className="mono" style={{ fontSize: 12, color: train.delayMinutes > 0 ? 'var(--accent)' : 'var(--ok-text)' }}>
             {train.delayMinutes > 0 ? `+${train.delayMinutes} min` : 'on time'}
           </div>
           <div className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>
@@ -76,7 +76,7 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
 
       {/* Platform choreography */}
       <div style={{ padding: '0 20px 4px' }}>
-        <div className="eyebrow" style={{ marginBottom: 10 }}>Platform choreography</div>
+        <h2 className="eyebrow" style={{ marginBottom: 10 }}>Platform choreography</h2>
         <div className="card" style={{ padding: 16 }}>
           <div className="serif" style={{ fontSize: 18, lineHeight: 1.3 }}>
             Stand at the <em>{quietest < crowding.length / 2 ? 'front' : 'back'}</em> of Track {train.actualTrack}.
@@ -86,7 +86,7 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
             <strong>{quietest < crowding.length / 2 ? 'north' : 'south'}</strong> end of the platform — also closest to the Utrecht exit escalators.
           </div>
 
-          <div style={{ marginTop: 16 }}>
+          <div aria-hidden="true" style={{ marginTop: 16 }}>
             <PlatformDiagram
               crowding={crowding}
               highlight={quietest}
@@ -104,7 +104,7 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
       {/* Delay propagation */}
       {train.delayMinutes > 0 && (
         <div style={{ padding: '20px 20px 0' }}>
-          <div className="eyebrow" style={{ marginBottom: 10, color: 'var(--accent)' }}>⁕ Why you&apos;re late</div>
+          <h2 className="eyebrow" style={{ marginBottom: 10, color: 'var(--accent)' }}>⁕ Why you&apos;re late</h2>
           <div className="card" style={{ padding: 16, background: 'color-mix(in oklab, var(--accent) 4%, var(--bg-2))', borderColor: 'var(--accent-dim)' }}>
             <div className="serif" style={{ fontSize: 17, lineHeight: 1.35 }}>
               Signaling disruption near <em>Duivendrecht</em> cascaded north. Your train inherited{' '}
@@ -120,7 +120,7 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
 
       {/* Timeline */}
       <div style={{ padding: '24px 20px 0' }}>
-        <div className="eyebrow" style={{ marginBottom: 12 }}>Journey timeline · {stops.length} stops</div>
+        <h2 className="eyebrow" style={{ marginBottom: 12 }}>Journey timeline · {stops.length} stops</h2>
         <div style={{ position: 'relative' }}>
           {stops.map((s, i) => (
             <StopRow key={s.code} stop={s} last={i === stops.length - 1} delayed={train.delayMinutes} />
@@ -228,8 +228,15 @@ function StopRow({ stop, last, delayed }: { stop: Stop; last: boolean; delayed: 
 function Spark() {
   const points = [6, 7, 8, 6, 5, 5, 4, 4, 3, 3, 2, 2, 2];
   const max = Math.max(...points);
+  const first = points[0];
+  const last = points[points.length - 1];
+  const trend = last < first ? 'improving' : last > first ? 'worsening' : 'stable';
   return (
-    <svg width="160" height="24" viewBox="0 0 160 24" fill="none">
+    <svg
+      width="160" height="24" viewBox="0 0 160 24" fill="none"
+      role="img"
+      aria-label={`Delay trend: ${trend} over the last 30 minutes`}
+    >
       <polyline
         points={points.map((v, i) => `${(i / (points.length - 1)) * 160},${24 - (v / max) * 20 - 2}`).join(' ')}
         fill="none" stroke="var(--accent)" strokeWidth="1.4" strokeLinejoin="round"
