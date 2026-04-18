@@ -28,8 +28,16 @@ export default function TabBar({ tab, hasJourney, onTabChange }: TabBarProps) {
             role="tab"
             id={`tab-${id}`}
             aria-selected={tab === id}
+            aria-controls={`panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
             data-active={tab === id}
             onClick={() => onTabChange(id === 'journey' ? (hasJourney ? 'journey' : 'rhythm') : id)}
+            onKeyDown={(e) => {
+              const ids = TABS.map(t => t.id);
+              const cur = ids.indexOf(id);
+              if (e.key === 'ArrowRight') { e.preventDefault(); onTabChange(ids[(cur + 1) % ids.length]); }
+              if (e.key === 'ArrowLeft')  { e.preventDefault(); onTabChange(ids[(cur - 1 + ids.length) % ids.length]); }
+            }}
           >
             <Icon aria-hidden="true" /><span>{label}</span>
           </button>
