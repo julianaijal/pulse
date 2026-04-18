@@ -105,21 +105,42 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
   useEffect(() => {
     if (!station) return;
     setDepartures(null);
-    let mounted = true;
-    (async () => {
+    let active = true;
+    let abortCtrl: AbortController | null = null;
+    let hasData = false;
+
+    const fetchData = async () => {
+      if (!active || document.visibilityState !== 'visible') return;
+      abortCtrl?.abort();
+      const ctrl = new AbortController();
+      abortCtrl = ctrl;
       try {
-        const res = await fetch(`/api/departures/${station.code}`);
+        const res = await fetch(`/api/departures/${station.code}`, { signal: ctrl.signal });
         if (res.ok) {
           const data = await res.json();
-          if (mounted && Array.isArray(data) && data.length > 0) {
+          if (active && Array.isArray(data) && data.length > 0) {
+            hasData = true;
             setDepartures(data);
             return;
           }
         }
-      } catch { /* fall through */ }
-      if (mounted) setDepartures(generateDepartures(station.code, new Date()));
-    })();
-    return () => { mounted = false; };
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+      }
+      if (active && !hasData) setDepartures(generateDepartures(station.code, new Date()));
+    };
+
+    fetchData();
+    const timer = setInterval(fetchData, 60_000);
+    const onVisibility = () => { if (document.visibilityState === 'visible') fetchData(); };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      active = false;
+      abortCtrl?.abort();
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [station?.code]);
 
   if (!station) return null;

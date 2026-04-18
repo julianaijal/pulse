@@ -24,21 +24,42 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    let active = true;
+    let abortCtrl: AbortController | null = null;
+    let hasData = false;
+
+    const fetchData = async () => {
+      if (!active || document.visibilityState !== 'visible') return;
+      abortCtrl?.abort();
+      const ctrl = new AbortController();
+      abortCtrl = ctrl;
       try {
-        const res = await fetch('/api/departures/ASD');
+        const res = await fetch('/api/departures/ASD', { signal: ctrl.signal });
         if (res.ok) {
           const data = await res.json();
-          if (mounted && Array.isArray(data) && data.length > 0) {
+          if (active && Array.isArray(data) && data.length > 0) {
+            hasData = true;
             setDepartures(data);
             return;
           }
         }
-      } catch { /* fall through */ }
-      if (mounted) setDepartures(generateDepartures('ASD', new Date()));
-    })();
-    return () => { mounted = false; };
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+      }
+      if (active && !hasData) setDepartures(generateDepartures('ASD', new Date()));
+    };
+
+    fetchData();
+    const timer = setInterval(fetchData, 60_000);
+    const onVisibility = () => { if (document.visibilityState === 'visible') fetchData(); };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      active = false;
+      abortCtrl?.abort();
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   const yourTrain = useMemo(() => {
@@ -65,14 +86,19 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
       <div style={{ padding: '24px 20px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div className="eyebrow" style={{ marginBottom: 4 }}>{dateLabel}</div>
-          <div className="serif" style={{ fontSize: 34, lineHeight: 1, letterSpacing: '-0.02em' }}>
+          <h1 className="serif" style={{ fontSize: 34, lineHeight: 1, letterSpacing: '-0.02em' }}>
             Good morning.
-          </div>
+          </h1>
           <div className="serif" style={{ fontSize: 18, color: 'var(--ink-2)', marginTop: 2, fontStyle: 'italic' }}>
             You have a train to catch.
           </div>
         </div>
         <span className="now-pill"><span className="dot live" /> {timeLabel}</span>
+      </div>
+
+      {/* Departures live region — announces count to screen readers */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {departures ? `${departures.length} departures loaded` : ''}
       </div>
 
       {/* ── Desktop 2-column grid ─────────────────── */}
@@ -82,7 +108,7 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
         <div className="rhythm-col-l">
           <div style={{ padding: '8px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-              <div className="eyebrow">Your commute</div>
+              <h2 className="eyebrow">Your commute</h2>
               <div className="eyebrow" style={{ color: 'var(--ink-2)' }}>{rhythm.usualDuration} MIN · {rhythm.historyWeeks} WKS</div>
             </div>
             {yourTrain ? (
@@ -164,10 +190,16 @@ function YourTrainCard({ train, rhythm, now, onClick, tweaks }: YourTrainCardPro
           {timeStr}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <div className="mono num" style={{
-            fontSize: 13, fontWeight: 600,
-            color: late > 0 ? 'var(--accent)' : 'color-mix(in oklab, var(--bg), transparent 30%)',
-          }}>
+          <div
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label="Train status"
+            className="mono num"
+            style={{
+              fontSize: 13, fontWeight: 600,
+              color: late > 0 ? 'var(--accent)' : 'color-mix(in oklab, var(--bg), transparent 30%)',
+            }}
+          >
             {late > 0 ? `+${late}` : 'on time'}
           </div>
           {late > 0 && (
@@ -220,7 +252,7 @@ function AnomalyBlock({ train, alternatives }: { train: IDeparture; alternatives
             fontSize: 13, fontWeight: 500,
           }}>
             <span>Swap to the {new Date(best.actualDateTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })} {best.trainCategory}</span>
-            <IconArrow style={{ width: 16, height: 16 }} />
+            <IconArrow aria-hidden="true" style={{ width: 16, height: 16 }} />
           </button>
         )}
       </div>
@@ -231,7 +263,7 @@ function AnomalyBlock({ train, alternatives }: { train: IDeparture; alternatives
 function BaselineBlock({ rhythm }: { rhythm: typeof USER_RHYTHM }) {
   return (
     <div style={{ padding: '16px 20px 4px' }}>
-      <div className="eyebrow" style={{ marginBottom: 10 }}>Your baseline · last 12 weeks</div>
+      <h2 className="eyebrow" style={{ marginBottom: 10 }}>Your baseline · last 12 weeks</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
         <StatCell big={(rhythm.onTimeRate * 100).toFixed(0)} suffix="%" label="on-time" />
         <StatCell big={String(rhythm.usualDuration)} suffix="m" label="avg. ride" />
@@ -259,7 +291,7 @@ function LaterToday({ departures, onOpen, tweaks }: { departures: IDeparture[] |
   return (
     <div style={{ padding: '20px 0 4px' }}>
       <div style={{ padding: '0 20px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div className="eyebrow">Later today · from ASD</div>
+        <h2 className="eyebrow">Later today · from ASD</h2>
         <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>{departures.length} trains</span>
       </div>
       <div style={{ padding: '0 20px' }}>

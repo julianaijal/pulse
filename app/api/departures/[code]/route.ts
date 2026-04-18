@@ -27,7 +27,7 @@ export async function GET(
       `${BASE_URL}/reisinformatie-api/api/v2/departures?station=${encodeURIComponent(safeCode)}&maxJourneys=15`,
       {
         headers: { 'Ocp-Apim-Subscription-Key': API_KEY },
-        next: { revalidate: 30 },
+        next: { revalidate: 60 },
       }
     );
 
