@@ -1,9 +1,4 @@
-// lru-cache v5 — default export is the constructor
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const LRU = require("lru-cache") as new (opts: { max: number }) => {
-  get(key: string): Entry | undefined;
-  set(key: string, value: Entry): void;
-};
+import LRU from "lru-cache";
 
 const WINDOW_MS = 60_000; // 1 minute
 const MAX_REQUESTS = 30;
@@ -13,7 +8,7 @@ interface Entry {
   windowStart: number;
 }
 
-const cache = new LRU({ max: 5000 });
+const cache = new LRU<string, Entry>({ max: 5000 });
 
 export function rateLimit(ip: string | null): { allowed: boolean } {
   // No identifiable IP — allow through (Vercel always sets x-forwarded-for in prod)
