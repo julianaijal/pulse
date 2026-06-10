@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { IDeparture, ITweaks } from '../../interfaces/interfaces';
 import { IconBack } from '../icons/Icons';
 import CrowdingStrip from '../shared/CrowdingStrip';
@@ -28,6 +28,10 @@ function quietestIdx(crowding: number[]): number {
 }
 
 export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps) {
+  const [fallbackCrowding] = useState<number[]>(() =>
+    Array.from({ length: 6 }, () => Math.random() * 0.6 + 0.2)
+  );
+
   if (!train) return null;
 
   const stops = STOPS.map((s, i) => ({
@@ -36,7 +40,7 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
     track: i === 0 ? (train.actualTrack ?? s.track) : s.track,
   }));
 
-  const crowding = train.crowding ?? Array.from({ length: 6 }, () => Math.random() * 0.6 + 0.2);
+  const crowding = train.crowding ?? fallbackCrowding;
   const quietest = quietestIdx(crowding);
   const actual = new Date(train.actualDateTime);
 
