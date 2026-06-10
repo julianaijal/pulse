@@ -157,6 +157,14 @@ Theme, verbosity, crowding style (bars / dots / heatmap), and accent colour are 
 
 ---
 
+## Project management
+
+We use [Linear](https://linear.app) for issue tracking and planning. Team: **Product** (prefix: `PRO`).
+
+Branches follow the format: `julianaijal/pro-{number}-{short-description}`
+
+---
+
 ## Contributing
 
 Contributions are welcome. Please open an issue first to discuss what you'd like to change.
