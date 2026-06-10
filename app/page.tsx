@@ -55,11 +55,13 @@ export default function Home() {
 
   // Hydrate from localStorage after mount
   useEffect(() => {
-    setTweaks(loadTweaks());
-    const saved = localStorage.getItem('pulse.tab') as Tab | null;
-    if (saved && ['rhythm', 'pulse', 'journey', 'station', 'search'].includes(saved)) {
-      setTab(saved);
-    }
+    queueMicrotask(() => {
+      setTweaks(loadTweaks());
+      const saved = localStorage.getItem('pulse.tab') as Tab | null;
+      if (saved && ['rhythm', 'pulse', 'journey', 'station', 'search'].includes(saved)) {
+        setTab(saved);
+      }
+    });
   }, []);
 
   useEffect(() => { localStorage.setItem('pulse.tab', tab); }, [tab]);
