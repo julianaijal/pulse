@@ -14,3 +14,8 @@
 - **Significant changes** (new feature, refactor, bug fix, design change): always create a Linear issue first, then branch → PR
 - **Tiny changes** (typo, one-line tweak): direct commit to `master` is fine
 - Be proactive: if work is about to start on something meaningful, suggest creating a Linear issue before writing any code
+
+## Issue lifecycle
+- Keep Linear issue state in sync with the work: move the issue to **In Progress** when starting, **In Review** when the PR opens
+- After a PR merges, verify the issue landed in **Done** (the `Fixes PRO-{number}` link should do this automatically); if the webhook missed it, update the state via the GraphQL API
+- When asked to "continue" or pick up work: check open PRs first, then the Linear backlog (and any plan in `docs/superpowers/plans/`) to decide what's next
