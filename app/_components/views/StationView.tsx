@@ -23,22 +23,16 @@ interface StationViewProps {
 export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: (s: StationObj) => void }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState<StationObj[]>(STATIONS.slice(0, 8));
-  const mountedRef = React.useRef(false);
-
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
     if (q.length < 1) {
       // Show all from local mock
-      setResults(STATIONS.slice(0, 8));
+      queueMicrotask(() => setResults(STATIONS.slice(0, 8)));
       return;
     }
     // First search local mock instantly
     const lo = q.toLowerCase();
     const local = STATIONS.filter(s => s.name.toLowerCase().includes(lo) || s.code.toLowerCase().includes(lo)).slice(0, 10);
-    setResults(local);
+    queueMicrotask(() => setResults(local));
 
     // Then try live API
     let cancelled = false;
