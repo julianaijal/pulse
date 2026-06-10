@@ -23,8 +23,13 @@ interface StationViewProps {
 export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: (s: StationObj) => void }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState<StationObj[]>(STATIONS.slice(0, 8));
+  const mountedRef = React.useRef(false);
 
   useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
     if (q.length < 1) {
       // Show all from local mock
       setResults(STATIONS.slice(0, 8));
@@ -106,7 +111,7 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
 
   useEffect(() => {
     if (!station) return;
-    setDepartures(null);
+    queueMicrotask(() => setDepartures(null));
     let active = true;
     let abortCtrl: AbortController | null = null;
     let hasData = false;
