@@ -11,9 +11,9 @@ export default function NowPill({ label }: NowPillProps) {
 
   useEffect(() => {
     const fmt = () => new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-    setTime(fmt());
+    const rafId = requestAnimationFrame(() => setTime(fmt()));
     const id = setInterval(() => setTime(fmt()), 15000);
-    return () => clearInterval(id);
+    return () => { cancelAnimationFrame(rafId); clearInterval(id); };
   }, []);
 
   return (
