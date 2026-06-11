@@ -1,25 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { IDeparture, ITweaks } from '../../interfaces/interfaces';
+import React, { useState, useEffect } from 'react';
+import { IDeparture, IStop, ITweaks } from '../../interfaces/interfaces';
 import { IconBack } from '../icons/Icons';
 import CrowdingStrip from '../shared/CrowdingStrip';
+import Loader from '../_partials/Loader';
 
 interface JourneyViewProps {
   train: IDeparture | null;
+  fromCode?: string;
   tweaks: ITweaks;
   onBack: () => void;
 }
-
-const STOPS = [
-  { code: 'ASD',  name: 'Amsterdam Centraal',  time: '08:14', track: '5',  here: true },
-  { code: 'ASS',  name: 'Amsterdam Sloterdijk', time: '08:19', track: '3'  },
-  { code: 'SHL',  name: 'Schiphol Airport',     time: '08:28', track: '4'  },
-  { code: 'LEDN', name: 'Leiden Centraal',       time: '08:39', track: '2'  },
-  { code: 'GVC',  name: 'Den Haag Centraal',    time: '08:52', track: '7'  },
-  { code: 'DT',   name: 'Delft',                time: '09:00', track: '3'  },
-  { code: 'RTD',  name: 'Rotterdam Centraal',   time: '09:12', track: '15', destination: true },
-];
 
 function quietestIdx(crowding: number[]): number {
   let min = 1, idx = 0;
@@ -27,21 +19,44 @@ function quietestIdx(crowding: number[]): number {
   return idx;
 }
 
-export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps) {
-  const [fallbackCrowding] = useState<number[]>(() =>
-    Array.from({ length: 6 }, () => Math.random() * 0.6 + 0.2)
-  );
+export default function JourneyView({ train, fromCode, tweaks, onBack }: JourneyViewProps) {
+  const [stops, setStops] = useState<IStop[] | null>(null);
+  const [stopsFailed, setStopsFailed] = useState(false);
+
+  const rawTrainId = train?.trainId;
+  const trainId =
+    rawTrainId != null && /^\d+$/.test(String(rawTrainId)) ? String(rawTrainId) : null;
+
+  useEffect(() => {
+    if (!trainId) {
+      queueMicrotask(() => { setStops(null); setStopsFailed(true); });
+      return;
+    }
+
+    queueMicrotask(() => { setStops(null); setStopsFailed(false); });
+
+    let active = true;
+    const ctrl = new AbortController();
+    fetch(`/api/journey/${trainId}`, { signal: ctrl.signal })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!active) return;
+        if (Array.isArray(data) && data.length > 0) setStops(data);
+        else setStopsFailed(true);
+      })
+      .catch(err => {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        if (active) setStopsFailed(true);
+      });
+
+    return () => { active = false; ctrl.abort(); };
+  }, [trainId]);
 
   if (!train) return null;
 
-  const stops = STOPS.map((s, i) => ({
-    ...s,
-    name: i === STOPS.length - 1 ? train.direction ?? s.name : s.name,
-    track: i === 0 ? (train.actualTrack ?? s.track) : s.track,
-  }));
-
-  const crowding = train.crowding ?? fallbackCrowding;
-  const quietest = quietestIdx(crowding);
+  const hereIdx = stops && fromCode ? stops.findIndex(s => s.code === fromCode) : -1;
+  const originName = stops ? (hereIdx >= 0 ? stops[hereIdx].name : stops[0].name) : null;
+  const crowding = train.crowding;
   const actual = new Date(train.actualDateTime);
 
   return (
@@ -58,11 +73,15 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
       {/* Big headline */}
       <div style={{ padding: '6px 20px 20px' }}>
         <div className="eyebrow" style={{ marginBottom: 6 }}>
-          {train.trainCategory} · TRAIN {train.trainId ?? '3523'}
+          {train.trainCategory}{train.trainId ? ` · TRAIN ${train.trainId}` : ''}
         </div>
         <h1 className="serif" style={{ fontSize: 36, lineHeight: 1.05, letterSpacing: '-0.02em' }}>
-          <em style={{ fontStyle: 'italic' }}>{stops[0].name}</em>
-          <span style={{ color: 'var(--ink-3)' }}> → </span>
+          {originName && (
+            <>
+              <em style={{ fontStyle: 'italic' }}>{originName}</em>
+              <span style={{ color: 'var(--ink-3)' }}> → </span>
+            </>
+          )}
           <em style={{ fontStyle: 'italic' }}>{train.direction}</em>
         </h1>
         <div style={{ marginTop: 10, display: 'flex', gap: 14, alignItems: 'baseline' }}>
@@ -78,62 +97,31 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
         </div>
       </div>
 
-      {/* Platform choreography */}
-      <div style={{ padding: '0 20px 4px' }}>
-        <h2 className="eyebrow" style={{ marginBottom: 10 }}>Platform choreography</h2>
-        <div className="card" style={{ padding: 16 }}>
-          <div className="serif" style={{ fontSize: 18, lineHeight: 1.3 }}>
-            Stand at the <em>{quietest < crowding.length / 2 ? 'front' : 'back'}</em> of Track {train.actualTrack}.
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 4, lineHeight: 1.45 }}>
-            Car <strong>{quietest + 1}</strong> is quietest right now. It&apos;ll stop near the{' '}
-            <strong>{quietest < crowding.length / 2 ? 'north' : 'south'}</strong> end of the platform — also closest to the Utrecht exit escalators.
-          </div>
-
-          <div aria-hidden="true" style={{ marginTop: 16 }}>
-            <PlatformDiagram
-              crowding={crowding}
-              highlight={quietest}
-              quietCar={train.quietCarriage ?? null}
-              firstClass={train.firstClassCars ?? []}
-            />
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <CrowdingStrip crowding={crowding} style={tweaks.crowdingStyle} />
-          </div>
-        </div>
-      </div>
-
-      {/* Delay propagation */}
-      {train.delayMinutes > 0 && (
-        <div style={{ padding: '20px 20px 0' }}>
-          <h2 className="eyebrow" style={{ marginBottom: 10, color: 'var(--accent)' }}>
-            <span aria-hidden="true">⁕ </span>Why you&apos;re late
-          </h2>
-          <div className="card" style={{ padding: 16, background: 'color-mix(in oklab, var(--accent) 4%, var(--bg-2))', borderColor: 'var(--accent-dim)' }}>
-            <div className="serif" style={{ fontSize: 17, lineHeight: 1.35 }}>
-              Signaling disruption near <em>Duivendrecht</em> cascaded north. Your train inherited{' '}
-              <em>{train.delayMinutes} min</em> of knock-on delay.
-            </div>
-            <div style={{ marginTop: 12, display: 'flex', gap: 4, alignItems: 'center' }}>
-              <Spark />
-              <span className="mono" style={{ fontSize: 11, color: 'var(--ink-3)', marginLeft: 8 }}>delay trend · last 30 min, decreasing</span>
-            </div>
-          </div>
-        </div>
+      {/* Platform choreography — only when real crowding data exists */}
+      {crowding && crowding.length > 0 && (
+        <PlatformCard crowding={crowding} train={train} tweaks={tweaks} />
       )}
 
       {/* Timeline */}
       <div style={{ padding: '24px 20px 0' }}>
-        <h2 className="eyebrow" style={{ marginBottom: 12 }}>Journey timeline · {stops.length} stops</h2>
-        <ol style={{ position: 'relative', listStyle: 'none', padding: 0, margin: 0 }}>
-          {stops.map((s, i) => (
-            <li key={s.code}>
-              <StopRow stop={s} last={i === stops.length - 1} delayed={train.delayMinutes} />
-            </li>
-          ))}
-        </ol>
+        <h2 className="eyebrow" style={{ marginBottom: 12 }}>
+          Journey timeline{stops ? ` · ${stops.length} stops` : ''}
+        </h2>
+        {stops ? (
+          <ol style={{ position: 'relative', listStyle: 'none', padding: 0, margin: 0 }}>
+            {stops.map((s, i) => (
+              <li key={`${s.code}-${i}`}>
+                <StopRow stop={s} here={i === hereIdx} last={i === stops.length - 1} />
+              </li>
+            ))}
+          </ol>
+        ) : stopsFailed ? (
+          <div className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+            Stops unavailable
+          </div>
+        ) : (
+          <Loader />
+        )}
       </div>
 
       <div style={{ height: 80 }} />
@@ -141,13 +129,41 @@ export default function JourneyView({ train, tweaks, onBack }: JourneyViewProps)
   );
 }
 
-interface Stop {
-  code: string;
-  name: string;
-  time: string;
-  track: string;
-  here?: boolean;
-  destination?: boolean;
+function PlatformCard({ crowding, train, tweaks }: {
+  crowding: number[];
+  train: IDeparture;
+  tweaks: ITweaks;
+}) {
+  const quietest = quietestIdx(crowding);
+  return (
+    <div style={{ padding: '0 20px 4px' }}>
+      <h2 className="eyebrow" style={{ marginBottom: 10 }}>Platform choreography</h2>
+      <div className="card" style={{ padding: 16 }}>
+        <div className="serif" style={{ fontSize: 18, lineHeight: 1.3 }}>
+          Stand at the <em>{quietest < crowding.length / 2 ? 'front' : 'back'}</em> of Track {train.actualTrack}.
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 4, lineHeight: 1.45 }}>
+          Car <strong>{quietest + 1}</strong> is quietest right now. It&apos;ll stop near the{' '}
+          <strong>{quietest < crowding.length / 2 ? 'north' : 'south'}</strong> end of the platform.
+        </div>
+
+        <div aria-hidden="true" style={{ marginTop: 16 }}>
+          <PlatformDiagram
+            crowding={crowding}
+            highlight={quietest}
+            quietCar={train.quietCarriage ?? null}
+            firstClass={train.firstClassCars ?? []}
+          />
+        </div>
+
+        {tweaks.verbosity === 'rich' && (
+          <div style={{ marginTop: 14 }}>
+            <CrowdingStrip crowding={crowding} style={tweaks.crowdingStyle} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function PlatformDiagram({ crowding, highlight, quietCar, firstClass }: {
@@ -190,17 +206,18 @@ function PlatformDiagram({ crowding, highlight, quietCar, firstClass }: {
   );
 }
 
-function StopRow({ stop, last, delayed }: { stop: Stop; last: boolean; delayed: number }) {
-  const [h, m] = stop.time.split(':').map(Number);
-  const actualM = m + (delayed || 0);
-  const actualTime = `${String(h + Math.floor(actualM / 60)).padStart(2, '0')}:${String(actualM % 60).padStart(2, '0')}`;
+function StopRow({ stop, here, last }: { stop: IStop; here: boolean; last: boolean }) {
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const delayed = new Date(stop.actualTime).getTime() !== new Date(stop.plannedTime).getTime();
+  const destination = stop.status === 'DESTINATION';
 
   return (
     <div style={{ display: 'flex', gap: 16, position: 'relative' }}>
       <div style={{ width: 60, textAlign: 'right', paddingTop: 8 }}>
-        <div className="mono num" style={{ fontSize: 13, fontWeight: 500 }}>{actualTime}</div>
-        {delayed > 0 && (
-          <div className="mono num" style={{ fontSize: 10.5, color: 'var(--ink-3)', textDecoration: 'line-through' }}>{stop.time}</div>
+        <div className="mono num" style={{ fontSize: 13, fontWeight: 500 }}>{fmt(stop.actualTime)}</div>
+        {delayed && (
+          <div className="mono num" style={{ fontSize: 10.5, color: 'var(--ink-3)', textDecoration: 'line-through' }}>{fmt(stop.plannedTime)}</div>
         )}
       </div>
 
@@ -209,46 +226,28 @@ function StopRow({ stop, last, delayed }: { stop: Stop; last: boolean; delayed: 
         <div style={{
           position: 'absolute', left: 4, top: 10,
           width: 10, height: 10, borderRadius: '50%',
-          background: stop.here ? 'var(--accent)' : 'var(--bg)',
-          border: `1.5px solid ${stop.here || stop.destination ? 'var(--ink)' : 'var(--ink-3)'}`,
-          boxShadow: stop.here ? '0 0 0 4px var(--accent-dim)' : 'none',
+          background: here ? 'var(--accent)' : 'var(--bg)',
+          border: `1.5px solid ${here || destination ? 'var(--ink)' : 'var(--ink-3)'}`,
+          boxShadow: here ? '0 0 0 4px var(--accent-dim)' : 'none',
         }} />
       </div>
 
       <div style={{ flex: 1, padding: '6px 0 18px' }}>
         <div className="serif" style={{
-          fontSize: stop.here || stop.destination ? 18 : 16,
+          fontSize: here || destination ? 18 : 16,
           lineHeight: 1.2,
-          fontStyle: stop.here ? 'italic' : 'normal',
-          color: stop.here ? 'var(--accent)' : 'var(--ink)',
+          fontStyle: here ? 'italic' : 'normal',
+          color: here ? 'var(--accent)' : 'var(--ink)',
         }}>
           {stop.name}
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
           <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>{stop.code}</span>
-          <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>· TRACK {stop.track}</span>
+          {stop.track && (
+            <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>· TRACK {stop.track}</span>
+          )}
         </div>
       </div>
     </div>
-  );
-}
-
-function Spark() {
-  const points = [6, 7, 8, 6, 5, 5, 4, 4, 3, 3, 2, 2, 2];
-  const max = Math.max(...points);
-  const first = points[0];
-  const last = points[points.length - 1];
-  const trend = last < first ? 'improving' : last > first ? 'worsening' : 'stable';
-  return (
-    <svg
-      width="160" height="24" viewBox="0 0 160 24" fill="none"
-      role="img"
-      aria-label={`Delay trend: ${trend} over the last 30 minutes`}
-    >
-      <polyline
-        points={points.map((v, i) => `${(i / (points.length - 1)) * 160},${24 - (v / max) * 20 - 2}`).join(' ')}
-        fill="none" stroke="var(--accent)" strokeWidth="1.4" strokeLinejoin="round"
-      />
-    </svg>
   );
 }
