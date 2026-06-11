@@ -289,7 +289,6 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                   actualTrack: '—',
                   plannedTrack: '—',
                   trackChanged: false,
-                  crowding: Array.from({ length: 6 }, () => Math.random()),
                   plannedDateTime: new Date().toISOString(),
                   actualDateTime: new Date().toISOString(),
                   cancelled: false,

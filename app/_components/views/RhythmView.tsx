@@ -9,7 +9,7 @@ import DepartureRow from '../shared/DepartureRow';
 
 interface RhythmViewProps {
   tweaks: ITweaks;
-  onOpenJourney: (train: IDeparture) => void;
+  onOpenJourney: (train: IDeparture, fromCode?: string) => void;
   onOpenStation: (station: { code: string; name: string }) => void;
 }
 
@@ -115,7 +115,7 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
               <div className="eyebrow" style={{ color: 'var(--ink-2)' }}>{rhythm.usualDuration} MIN · {rhythm.historyWeeks} WKS</div>
             </div>
             {yourTrain ? (
-              <YourTrainCard train={yourTrain} rhythm={rhythm} now={now} onClick={() => onOpenJourney(yourTrain)} tweaks={tweaks} />
+              <YourTrainCard train={yourTrain} rhythm={rhythm} now={now} onClick={() => onOpenJourney(yourTrain, 'ASD')} tweaks={tweaks} />
             ) : (
               <div className="card" style={{ padding: 20, height: 180 }}>
                 <div className="skeleton" style={{ height: 40, marginBottom: 12 }} />
@@ -133,7 +133,7 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
         {/* Right column: baseline + later today */}
         <div className="rhythm-col-r">
           <BaselineBlock rhythm={rhythm} />
-          <LaterToday departures={departures} onOpen={onOpenJourney} tweaks={tweaks} />
+          <LaterToday departures={departures} onOpen={d => onOpenJourney(d, 'ASD')} tweaks={tweaks} />
         </div>
 
       </div>{/* /rhythm-grid */}
