@@ -10,7 +10,7 @@ import { GET } from "./route";
 import { rateLimit } from "../../../_lib/rateLimit";
 
 function callWithTrain(trainId: string) {
-  return GET(new NextRequest("http://localhost/api/journey/1234"), {
+  return GET(new NextRequest(`http://localhost/api/journey/${trainId}`), {
     params: Promise.resolve({ trainId }),
   });
 }
@@ -93,6 +93,13 @@ describe("GET /api/journey/[trainId]", () => {
                     actualTrack: "4",
                   },
                 ],
+              },
+              {
+                id: "wsp_0",
+                stop: { name: "Weesp" },
+                status: "STOP",
+                arrivals: [],
+                departures: [],
               },
               {
                 id: "rtd_0",
