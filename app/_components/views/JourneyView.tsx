@@ -11,6 +11,7 @@ interface JourneyViewProps {
   fromCode?: string;
   tweaks: ITweaks;
   onBack: () => void;
+  onNavigate: (tab: 'rhythm' | 'search') => void;
 }
 
 function quietestIdx(crowding: number[]): number {
@@ -19,7 +20,7 @@ function quietestIdx(crowding: number[]): number {
   return idx;
 }
 
-export default function JourneyView({ train, fromCode, tweaks, onBack }: JourneyViewProps) {
+export default function JourneyView({ train, fromCode, tweaks, onBack, onNavigate }: JourneyViewProps) {
   const [stops, setStops] = useState<IStop[] | null>(null);
   const [stopsFailed, setStopsFailed] = useState(false);
 
@@ -52,7 +53,34 @@ export default function JourneyView({ train, fromCode, tweaks, onBack }: Journey
     return () => { active = false; ctrl.abort(); };
   }, [trainId]);
 
-  if (!train) return null;
+  if (!train) {
+    return (
+      <div className="view fade-up">
+        <div style={{ padding: '18px 20px 6px' }}>
+          <button onClick={onBack} style={{ padding: '6px 0', color: 'var(--ink-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <IconBack aria-hidden="true" style={{ width: 18, height: 18 }} />
+            <span className="eyebrow" style={{ color: 'var(--ink-2)' }}>Back</span>
+          </button>
+        </div>
+        <div style={{ padding: '6px 20px' }}>
+          <h1 className="serif" style={{ fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+            Geen actieve reis
+          </h1>
+          <p style={{ marginTop: 10, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, maxWidth: 360 }}>
+            Kies een trein in{' '}
+            <button onClick={() => onNavigate('rhythm')} style={{ color: 'var(--accent)', textDecoration: 'underline', padding: 0, fontSize: 13 }}>
+              Rhythm
+            </button>
+            {' '}of{' '}
+            <button onClick={() => onNavigate('search')} style={{ color: 'var(--accent)', textDecoration: 'underline', padding: 0, fontSize: 13 }}>
+              Zoeken
+            </button>
+            {' '}om hem hier te volgen.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const hereIdx = stops && fromCode ? stops.findIndex(s => s.code === fromCode) : -1;
   const originName = stops ? (hereIdx >= 0 ? stops[hereIdx].name : stops[0].name) : null;

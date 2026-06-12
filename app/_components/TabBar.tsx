@@ -7,7 +7,6 @@ type Tab = 'rhythm' | 'pulse' | 'journey' | 'search';
 
 interface TabBarProps {
   tab: Tab;
-  hasJourney: boolean;
   onTabChange: (tab: Tab) => void;
 }
 
@@ -18,7 +17,7 @@ const TABS: { id: Tab; label: string; Icon: React.ComponentType<React.SVGProps<S
   { id: 'search',  label: 'Search',  Icon: IconSearch  },
 ];
 
-export default function TabBar({ tab, hasJourney, onTabChange }: TabBarProps) {
+export default function TabBar({ tab, onTabChange }: TabBarProps) {
   return (
     <nav className="tabbar" aria-label="Main navigation">
       <div role="tablist">
@@ -31,7 +30,7 @@ export default function TabBar({ tab, hasJourney, onTabChange }: TabBarProps) {
             aria-controls={`panel-${id}`}
             tabIndex={tab === id ? 0 : -1}
             data-active={tab === id}
-            onClick={() => onTabChange(id === 'journey' ? (hasJourney ? 'journey' : 'rhythm') : id)}
+            onClick={() => onTabChange(id)}
             onKeyDown={(e) => {
               const ids = TABS.map(t => t.id);
               const cur = ids.indexOf(id);
