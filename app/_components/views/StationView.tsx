@@ -17,7 +17,7 @@ interface StationViewProps {
   station: StationObj | null;
   tweaks: ITweaks;
   onBack: () => void;
-  onOpenJourney: (train: IDeparture) => void;
+  onOpenJourney: (train: IDeparture, fromCode?: string) => void;
 }
 
 export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: (s: StationObj) => void }) {
@@ -180,7 +180,7 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
           <FullDepartureRow
             key={d.id}
             d={d}
-            onOpen={() => onOpenJourney(d)}
+            onOpen={() => onOpenJourney(d, station.code)}
             verbose={tweaks.verbosity === 'rich'}
             crowdingStyle={tweaks.crowdingStyle}
           />

@@ -6,6 +6,15 @@ export interface IStation {
   lng?: number;
 }
 
+export interface IStop {
+  code: string;
+  name: string;
+  plannedTime: string;   // ISO
+  actualTime: string;    // ISO
+  track: string;
+  status: 'ORIGIN' | 'STOP' | 'DESTINATION';
+}
+
 export interface IDeparture {
   id: string;
   direction: string;

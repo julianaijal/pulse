@@ -49,7 +49,7 @@ const NAV_ITEMS = [
 export default function Home() {
   const [tweaks, setTweaks]       = useState<ITweaks>(TWEAK_DEFAULTS);
   const [tab, setTab]             = useState<Tab>('rhythm');
-  const [journey, setJourney]     = useState<IDeparture | null>(null);
+  const [journey, setJourney]     = useState<{ train: IDeparture; fromCode?: string } | null>(null);
   const [station, setStation]     = useState<StationObj | null>(null);
   const [showTweaks, setShowTweaks] = useState(false);
 
@@ -76,7 +76,7 @@ export default function Home() {
     localStorage.setItem(`pulse.${key}`, value);
   };
 
-  const openJourney = (train: IDeparture) => { setJourney(train); setTab('journey'); };
+  const openJourney = (train: IDeparture, fromCode?: string) => { setJourney({ train, fromCode }); setTab('journey'); };
   const openStation = (s: StationObj)     => { setStation(s);  setTab('station'); };
 
   const goTo = (id: string) => {
@@ -91,7 +91,7 @@ export default function Home() {
   let content: React.ReactNode;
   if      (tab === 'rhythm')  content = <RhythmView  tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
   else if (tab === 'pulse')   content = <PulseView   tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
-  else if (tab === 'journey') content = <JourneyView train={journey} tweaks={tweaks} onBack={() => setTab('rhythm')} />;
+  else if (tab === 'journey') content = <JourneyView train={journey?.train ?? null} fromCode={journey?.fromCode} tweaks={tweaks} onBack={() => setTab('rhythm')} />;
   else if (tab === 'station') content = <StationView station={station} tweaks={tweaks} onBack={() => setTab('pulse')} onOpenJourney={openJourney} />;
   else if (tab === 'search')  content = <StationSearch onBack={() => setTab('rhythm')} onPick={openStation} />;
 
