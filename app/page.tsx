@@ -113,6 +113,7 @@ export default function Home() {
               key={id}
               className="pulse-sidebar-item"
               data-active={activeNav === id}
+              aria-current={activeNav === id ? 'page' : undefined}
               onClick={() => goTo(id)}
             >
               <Icon aria-hidden="true" style={{ width: 20, height: 20 }} />
@@ -136,13 +137,7 @@ export default function Home() {
       </aside>
 
       {/* ── Main content ─────────────────────────────────── */}
-      <main
-        id="main-content"
-        tabIndex={-1}
-        className="pulse-main"
-        role="tabpanel"
-        aria-labelledby={`tab-${activeNav}`}
-      >
+      <main id="main-content" tabIndex={-1} className="pulse-main">
         {content}
         <TabBar
           tab={activeNav as 'rhythm' | 'pulse' | 'journey' | 'search'}

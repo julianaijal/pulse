@@ -20,23 +20,13 @@ const TABS: { id: Tab; label: string; Icon: React.ComponentType<React.SVGProps<S
 export default function TabBar({ tab, onTabChange }: TabBarProps) {
   return (
     <nav className="tabbar" aria-label="Main navigation">
-      <div role="tablist">
+      <div className="tabbar-list">
         {TABS.map(({ id, label, Icon }) => (
           <button
             key={id}
-            role="tab"
-            id={`tab-${id}`}
-            aria-selected={tab === id}
-            aria-controls={`panel-${id}`}
-            tabIndex={tab === id ? 0 : -1}
+            aria-current={tab === id ? 'page' : undefined}
             data-active={tab === id}
             onClick={() => onTabChange(id)}
-            onKeyDown={(e) => {
-              const ids = TABS.map(t => t.id);
-              const cur = ids.indexOf(id);
-              if (e.key === 'ArrowRight') { e.preventDefault(); onTabChange(ids[(cur + 1) % ids.length]); }
-              if (e.key === 'ArrowLeft')  { e.preventDefault(); onTabChange(ids[(cur - 1 + ids.length) % ids.length]); }
-            }}
           >
             <Icon aria-hidden="true" /><span>{label}</span>
           </button>
