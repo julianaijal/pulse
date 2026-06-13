@@ -11,9 +11,9 @@ interface CrowdingStripProps {
 
 export function crowdingColor(c: number, invert = false): string {
   if (invert) {
-    if (c < 0.4) return 'oklch(0.78 0.09 150)';
-    if (c < 0.75) return 'oklch(0.78 0.14 75)';
-    return 'oklch(0.72 0.18 30)';
+    if (c < 0.4) return 'var(--ok-on-ink)';
+    if (c < 0.75) return 'var(--warn-on-ink)';
+    return 'var(--bad-on-ink)';
   }
   if (c < 0.4) return 'var(--ok)';
   if (c < 0.75) return 'var(--warn)';

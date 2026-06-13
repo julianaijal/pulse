@@ -18,6 +18,11 @@
   --warn-text: oklch(0.48 0.14 75);
   --bad-text:  oklch(0.42 0.16 25);
 
+  /* Status colours on the always-dark --ink card (same in both themes) */
+  --ok-on-ink:   oklch(0.78 0.09 150);
+  --warn-on-ink: oklch(0.78 0.14 75);
+  --bad-on-ink:  oklch(0.72 0.18 30);
+
   --radius: 14px;
   --radius-lg: 22px;
   --sidebar-w: 220px;
