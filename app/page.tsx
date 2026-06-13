@@ -50,7 +50,7 @@ export default function Home() {
   const [tweaks, setTweaks]       = useState<ITweaks>(TWEAK_DEFAULTS);
   const [tab, setTab]             = useState<Tab>('rhythm');
   const [journey, setJourney]     = useState<{ train: IDeparture; fromCode?: string } | null>(null);
-  const [station, setStation]     = useState<StationObj | null>(null);
+  const [station, setStation]     = useState<{ station: StationObj; origin: Tab } | null>(null);
   const [showTweaks, setShowTweaks] = useState(false);
 
   // Hydrate from localStorage after mount
@@ -77,22 +77,21 @@ export default function Home() {
   };
 
   const openJourney = (train: IDeparture, fromCode?: string) => { setJourney({ train, fromCode }); setTab('journey'); };
-  const openStation = (s: StationObj)     => { setStation(s);  setTab('station'); };
+  const openStation = (s: StationObj)     => { setStation({ station: s, origin: tab }); setTab('station'); };
 
   const goTo = (id: string) => {
-    if (id === 'search')  { setStation(null); setTab('search'); }
-    else if (id === 'journey') setTab(journey ? 'journey' : 'rhythm');
+    if (id === 'search') { setStation(null); setTab('search'); }
     else setTab(id as Tab);
   };
 
-  // Active tab for nav highlighting (station renders under pulse)
-  const activeNav = tab === 'station' ? 'pulse' : tab;
+  // Active tab for nav highlighting (station renders under its origin tab)
+  const activeNav = tab === 'station' ? (station?.origin ?? 'pulse') : tab;
 
   let content: React.ReactNode;
   if      (tab === 'rhythm')  content = <RhythmView  tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
   else if (tab === 'pulse')   content = <PulseView   tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
-  else if (tab === 'journey') content = <JourneyView train={journey?.train ?? null} fromCode={journey?.fromCode} tweaks={tweaks} onBack={() => setTab('rhythm')} />;
-  else if (tab === 'station') content = <StationView station={station} tweaks={tweaks} onBack={() => setTab('pulse')} onOpenJourney={openJourney} />;
+  else if (tab === 'journey') content = <JourneyView train={journey?.train ?? null} fromCode={journey?.fromCode} tweaks={tweaks} onBack={() => setTab('rhythm')} onNavigate={goTo} />;
+  else if (tab === 'station') content = <StationView station={station?.station ?? null} tweaks={tweaks} onBack={() => setTab(station?.origin ?? 'pulse')} onOpenJourney={openJourney} />;
   else if (tab === 'search')  content = <StationSearch onBack={() => setTab('rhythm')} onPick={openStation} />;
 
   return (
@@ -114,6 +113,7 @@ export default function Home() {
               key={id}
               className="pulse-sidebar-item"
               data-active={activeNav === id}
+              aria-current={activeNav === id ? 'page' : undefined}
               onClick={() => goTo(id)}
             >
               <Icon aria-hidden="true" style={{ width: 20, height: 20 }} />
@@ -137,17 +137,10 @@ export default function Home() {
       </aside>
 
       {/* ── Main content ─────────────────────────────────── */}
-      <main
-        id="main-content"
-        tabIndex={-1}
-        className="pulse-main"
-        role="tabpanel"
-        aria-labelledby={`tab-${activeNav}`}
-      >
+      <main id="main-content" tabIndex={-1} className="pulse-main">
         {content}
         <TabBar
           tab={activeNav as 'rhythm' | 'pulse' | 'journey' | 'search'}
-          hasJourney={journey !== null}
           onTabChange={goTo}
         />
       </main>

@@ -4,6 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import { ITweaks } from '../interfaces/interfaces';
 import { IconClose } from './icons/Icons';
 
+// NOTE: values are mirrored in the inline theme script in app/layout.tsx — keep in sync.
 const ACCENT_MAP: Record<string, string> = {
   orange: 'oklch(0.60 0.17 45)',
   cobalt: 'oklch(0.55 0.19 265)',
