@@ -3,6 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import { ITweaks, CommuteStation } from '../interfaces/interfaces';
 import { IconClose } from './icons/Icons';
+import StationPicker from './shared/StationPicker';
 
 // NOTE: values are mirrored in the inline theme script in app/layout.tsx — keep in sync.
 const ACCENT_MAP: Record<string, string> = {
@@ -82,6 +83,40 @@ export default function TweaksPanel({ tweaks, onChange, commute, onCommuteChange
           <IconClose style={{ width: 16, height: 16 }} aria-hidden="true" />
         </button>
       </div>
+
+      <TweakRow label="Your commute">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div>
+            <div className="mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginBottom: 4 }}>FROM</div>
+            <StationPicker label="From" value={commute.home} onChange={s => onCommuteChange('home', s)} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={() => {
+                if (commute.home && commute.work) {
+                  const prev = { home: commute.home, work: commute.work };
+                  onCommuteChange('home', prev.work);
+                  onCommuteChange('work', prev.home);
+                }
+              }}
+              aria-label="Swap home and work stations"
+              style={{
+                padding: '4px 12px', fontSize: 11, color: 'var(--ink-2)',
+                background: 'var(--bg-2)', borderRadius: 100,
+                border: '1px solid var(--line)',
+              }}
+            >
+              ↕ swap
+            </button>
+          </div>
+          <div>
+            <div className="mono" style={{ fontSize: 10, color: 'var(--ink-3)', marginBottom: 4 }}>TO</div>
+            <StationPicker label="To" value={commute.work} onChange={s => onCommuteChange('work', s)} />
+          </div>
+        </div>
+      </TweakRow>
+
+      <div className="hairline" style={{ margin: '2px 0 14px' }} />
 
       <TweakRow label="Theme">
         <Segmented
