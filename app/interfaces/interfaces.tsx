@@ -6,6 +6,11 @@ export interface IStation {
   lng?: number;
 }
 
+export interface CommuteStation {
+  code: string;
+  name: string;
+}
+
 export interface IStop {
   code: string;
   name: string;

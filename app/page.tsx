@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { IDeparture, ITweaks } from './interfaces/interfaces';
+import { IDeparture, ITweaks, CommuteStation } from './interfaces/interfaces';
 import { ACCENT_MAP } from './_components/TweaksPanel';
 import TabBar from './_components/TabBar';
 import TweaksPanel from './_components/TweaksPanel';
@@ -52,6 +52,7 @@ export default function Home() {
   const [journey, setJourney]     = useState<{ train: IDeparture; fromCode?: string } | null>(null);
   const [station, setStation]     = useState<{ station: StationObj; origin: Tab } | null>(null);
   const [showTweaks, setShowTweaks] = useState(false);
+  const [commute, setCommute]     = useState<{ home: CommuteStation | null; work: CommuteStation | null }>({ home: null, work: null });
 
   // Hydrate from localStorage after mount
   useEffect(() => {
@@ -61,6 +62,14 @@ export default function Home() {
       if (saved && ['rhythm', 'pulse', 'journey', 'station', 'search'].includes(saved)) {
         setTab(saved);
       }
+      const parseStation = (key: string): CommuteStation | null => {
+        try { return JSON.parse(localStorage.getItem(key) ?? ''); }
+        catch { return null; }
+      };
+      setCommute({
+        home: parseStation('pulse.homeStation') ?? { code: 'ASD', name: 'Amsterdam Centraal' },
+        work: parseStation('pulse.workStation') ?? { code: 'UT', name: 'Utrecht Centraal' },
+      });
     });
   }, []);
 
@@ -76,6 +85,11 @@ export default function Home() {
     localStorage.setItem(`pulse.${key}`, value);
   };
 
+  const setCommuteStation = (key: 'home' | 'work', station: CommuteStation) => {
+    setCommute(c => ({ ...c, [key]: station }));
+    localStorage.setItem(key === 'home' ? 'pulse.homeStation' : 'pulse.workStation', JSON.stringify(station));
+  };
+
   const openJourney = (train: IDeparture, fromCode?: string) => { setJourney({ train, fromCode }); setTab('journey'); };
   const openStation = (s: StationObj)     => { setStation({ station: s, origin: tab }); setTab('station'); };
 
@@ -88,7 +102,7 @@ export default function Home() {
   const activeNav = tab === 'station' ? (station?.origin ?? 'pulse') : tab;
 
   let content: React.ReactNode;
-  if      (tab === 'rhythm')  content = <RhythmView  tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
+  if      (tab === 'rhythm')  content = <RhythmView  tweaks={tweaks} homeStation={commute.home} workStation={commute.work} onOpenJourney={openJourney} onOpenStation={openStation} />;
   else if (tab === 'pulse')   content = <PulseView   tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
   else if (tab === 'journey') content = <JourneyView train={journey?.train ?? null} fromCode={journey?.fromCode} tweaks={tweaks} onBack={() => setTab('rhythm')} onNavigate={goTo} />;
   else if (tab === 'station') content = <StationView station={station?.station ?? null} tweaks={tweaks} onBack={() => setTab(station?.origin ?? 'pulse')} onOpenJourney={openJourney} />;
@@ -155,7 +169,7 @@ export default function Home() {
       </button>
 
       {showTweaks && (
-        <TweaksPanel tweaks={tweaks} onChange={updateTweak} onClose={() => setShowTweaks(false)} />
+        <TweaksPanel tweaks={tweaks} onChange={updateTweak} commute={commute} onCommuteChange={setCommuteStation} onClose={() => setShowTweaks(false)} />
       )}
     </div>
   );
