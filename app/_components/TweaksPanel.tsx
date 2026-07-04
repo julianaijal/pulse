@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { ITweaks } from '../interfaces/interfaces';
+import { ITweaks, CommuteStation } from '../interfaces/interfaces';
 import { IconClose } from './icons/Icons';
 
 // NOTE: values are mirrored in the inline theme script in app/layout.tsx — keep in sync.
@@ -15,10 +15,12 @@ const ACCENT_MAP: Record<string, string> = {
 interface TweaksPanelProps {
   tweaks: ITweaks;
   onChange: (key: keyof ITweaks, value: string) => void;
+  commute: { home: CommuteStation | null; work: CommuteStation | null };
+  onCommuteChange: (key: 'home' | 'work', station: CommuteStation) => void;
   onClose: () => void;
 }
 
-export default function TweaksPanel({ tweaks, onChange, onClose }: TweaksPanelProps) {
+export default function TweaksPanel({ tweaks, onChange, commute, onCommuteChange, onClose }: TweaksPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);

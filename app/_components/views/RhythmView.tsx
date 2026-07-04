@@ -2,19 +2,29 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { IDeparture, ITweaks } from '../../interfaces/interfaces';
-import { generateDepartures, USER_RHYTHM } from '../../_utils/mock';
+import { generateDepartures } from '../../_utils/mock';
 import { IconArrow } from '../icons/Icons';
 import CrowdingStrip from '../shared/CrowdingStrip';
 import DepartureRow from '../shared/DepartureRow';
 
 interface RhythmViewProps {
   tweaks: ITweaks;
+  homeStation: { code: string; name: string } | null;
+  workStation: { code: string; name: string } | null;
   onOpenJourney: (train: IDeparture, fromCode?: string) => void;
   onOpenStation: (station: { code: string; name: string }) => void;
 }
 
-export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
-  const rhythm = USER_RHYTHM;
+const DEMO_BASELINE = {
+  usualDuration: 27,
+  historyWeeks: 12,
+  onTimeRate: 0.89,
+  avgCrowding: 0.62,
+};
+
+export default function RhythmView({ tweaks, homeStation, workStation, onOpenJourney }: RhythmViewProps) {
+  const home = homeStation ?? { code: 'ASD', name: 'Amsterdam Centraal' };
+  const work = workStation ?? { code: 'UT', name: 'Utrecht Centraal' };
   const [now, setNow] = useState(new Date());
   const [departures, setDepartures] = useState<IDeparture[] | null>(null);
 
@@ -34,7 +44,7 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
       const ctrl = new AbortController();
       abortCtrl = ctrl;
       try {
-        const res = await fetch('/api/departures/ASD', { signal: ctrl.signal });
+        const res = await fetch(`/api/departures/${home.code}`, { signal: ctrl.signal });
         if (res.ok) {
           const data = await res.json();
           if (active && Array.isArray(data) && data.length > 0) {
@@ -46,7 +56,7 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
       }
-      if (active && !hasData) setDepartures(generateDepartures('ASD', new Date()));
+      if (active && !hasData) setDepartures(generateDepartures(home.code, new Date()));
     };
 
     fetchData();
@@ -60,22 +70,21 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, []);
+  }, [home.code]);
 
   const yourTrain = useMemo(() => {
     if (!departures) return null;
-    return departures.find(d => d.direction === 'Utrecht Centraal' && d.trainCategory === 'IC')
-      ?? departures.find(d => d.direction === 'Utrecht Centraal')
+    return departures.find(d => (d.direction === work.name || d.destinationCode === work.code) && d.trainCategory === 'IC')
+      ?? departures.find(d => d.direction === work.name || d.destinationCode === work.code)
       ?? departures[0];
-  }, [departures]);
+  }, [departures, work.name, work.code]);
 
   const alternatives = useMemo(() => {
     if (!departures) return [];
     return departures.filter(d =>
-      d.direction === 'Utrecht Centraal' || d.direction === 'Rotterdam Centraal' ||
-      d.destinationCode === 'UT' || d.destinationCode === 'RTD'
+      d.direction === work.name || d.destinationCode === work.code
     ).slice(0, 3);
-  }, [departures]);
+  }, [departures, work.name, work.code]);
 
   const timeLabel = now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
   const dateLabel = now.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -112,10 +121,10 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
           <div style={{ padding: '8px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
               <h2 className="eyebrow">Your commute</h2>
-              <div className="eyebrow" style={{ color: 'var(--ink-2)' }}>{rhythm.usualDuration} MIN · {rhythm.historyWeeks} WKS</div>
+              <div className="eyebrow" style={{ color: 'var(--ink-2)' }}>{DEMO_BASELINE.usualDuration} MIN · {DEMO_BASELINE.historyWeeks} WKS</div>
             </div>
             {yourTrain ? (
-              <YourTrainCard train={yourTrain} rhythm={rhythm} now={now} onClick={() => onOpenJourney(yourTrain, 'ASD')} tweaks={tweaks} />
+              <YourTrainCard train={yourTrain} home={home} now={now} onClick={() => onOpenJourney(yourTrain, home.code)} tweaks={tweaks} />
             ) : (
               <div className="card" style={{ padding: 20, height: 180 }}>
                 <div className="skeleton" style={{ height: 40, marginBottom: 12 }} />
@@ -132,8 +141,8 @@ export default function RhythmView({ tweaks, onOpenJourney }: RhythmViewProps) {
 
         {/* Right column: baseline + later today */}
         <div className="rhythm-col-r">
-          <BaselineBlock rhythm={rhythm} />
-          <LaterToday departures={departures} onOpen={d => onOpenJourney(d, 'ASD')} tweaks={tweaks} />
+          <BaselineBlock />
+          <LaterToday departures={departures} onOpen={d => onOpenJourney(d, home.code)} tweaks={tweaks} homeCode={home.code} />
         </div>
 
       </div>{/* /rhythm-grid */}
@@ -151,13 +160,13 @@ function quietestCar(crowding: number[]): number {
 
 interface YourTrainCardProps {
   train: IDeparture;
-  rhythm: typeof USER_RHYTHM;
+  home: { code: string; name: string };
   now: Date;
   onClick: () => void;
   tweaks: ITweaks;
 }
 
-function YourTrainCard({ train, rhythm, now, onClick, tweaks }: YourTrainCardProps) {
+function YourTrainCard({ train, home, now, onClick, tweaks }: YourTrainCardProps) {
   const planned = new Date(train.plannedDateTime);
   const actual = new Date(train.actualDateTime);
   const minsTo = Math.max(0, Math.round((actual.getTime() - now.getTime()) / 60000));
@@ -183,7 +192,7 @@ function YourTrainCard({ train, rhythm, now, onClick, tweaks }: YourTrainCardPro
           </span>
         </div>
         <span className="mono" style={{ fontSize: 11, color: 'color-mix(in oklab, var(--bg), transparent 50%)' }}>
-          {rhythm.usualDeparture.trainLabel}
+          {train.trainCategory} {train.trainId ?? ''}
         </span>
       </div>
 
@@ -219,7 +228,7 @@ function YourTrainCard({ train, rhythm, now, onClick, tweaks }: YourTrainCardPro
           to <em style={{ fontStyle: 'italic' }}>{train.direction}</em>
         </div>
         <div className="mono" style={{ fontSize: 11.5, color: 'color-mix(in oklab, var(--bg), transparent 40%)', marginTop: 4 }}>
-          departs in {minsTo} min · arrives {new Date(actual.getTime() + rhythm.usualDuration * 60000).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+          departs in {minsTo} min · from {home.name}
         </div>
       </div>
 
@@ -269,14 +278,14 @@ function AnomalyBlock({ train, alternatives }: { train: IDeparture; alternatives
   );
 }
 
-function BaselineBlock({ rhythm }: { rhythm: typeof USER_RHYTHM }) {
+function BaselineBlock() {
   return (
     <div style={{ padding: '16px 20px 4px' }}>
-      <h2 className="eyebrow" style={{ marginBottom: 10 }}>Your baseline · last 12 weeks</h2>
+      <h2 className="eyebrow" style={{ marginBottom: 10 }}>Baseline · demo data</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-        <StatCell big={(rhythm.onTimeRate * 100).toFixed(0)} suffix="%" label="on-time" />
-        <StatCell big={String(rhythm.usualDuration)} suffix="m" label="avg. ride" />
-        <StatCell big={(rhythm.avgCrowding * 100).toFixed(0)} suffix="%" label="avg. crowd" />
+        <StatCell big={(DEMO_BASELINE.onTimeRate * 100).toFixed(0)} suffix="%" label="on-time" />
+        <StatCell big={String(DEMO_BASELINE.usualDuration)} suffix="m" label="avg. ride" />
+        <StatCell big={(DEMO_BASELINE.avgCrowding * 100).toFixed(0)} suffix="%" label="avg. crowd" />
       </div>
     </div>
   );
@@ -294,13 +303,13 @@ function StatCell({ big, suffix, label }: { big: string; suffix: string; label: 
   );
 }
 
-function LaterToday({ departures, onOpen, tweaks }: { departures: IDeparture[] | null; onOpen: (d: IDeparture) => void; tweaks: ITweaks }) {
+function LaterToday({ departures, onOpen, tweaks, homeCode }: { departures: IDeparture[] | null; onOpen: (d: IDeparture) => void; tweaks: ITweaks; homeCode: string }) {
   if (!departures) return null;
   const list = departures.slice(0, tweaks.verbosity === 'minimal' ? 3 : 6);
   return (
     <div style={{ padding: '20px 0 4px' }}>
       <div style={{ padding: '0 20px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-        <h2 className="eyebrow">Later today · from ASD</h2>
+        <h2 className="eyebrow">Later today · from {homeCode}</h2>
         <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>{departures.length} trains</span>
       </div>
       <div style={{ padding: '0 20px' }}>

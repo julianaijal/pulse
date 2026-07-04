@@ -134,20 +134,3 @@ export function generateDisruptions(): IDisruption[] {
     },
   ];
 }
-
-export const USER_RHYTHM = {
-  homeCode: 'ASD',
-  homeName: 'Amsterdam Centraal',
-  workCode: 'UT',
-  workName: 'Utrecht Centraal',
-  usualDeparture: { h: 8, m: 14, trainLabel: 'IC 3523', track: '5', category: 'IC' },
-  usualDuration: 27,
-  historyWeeks: 12,
-  onTimeRate: 0.89,
-  avgCrowding: 0.62,
-  commonSwaps: [
-    { label: 'IC 3521', delta: -7, fasterBy: 0, crowdingDelta: +0.18 },
-    { label: 'IC 3525', delta: +7, fasterBy: 0, crowdingDelta: -0.24 },
-    { label: 'ICD 923', delta: -4, fasterBy: 3, crowdingDelta: +0.11 },
-  ],
-};
