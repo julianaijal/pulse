@@ -21,6 +21,7 @@ function quietestIdx(crowding: number[]): number {
 export default function JourneyView({ train, fromCode, onBack, onNavigate }: JourneyViewProps) {
   const [stops, setStops] = useState<IStop[] | null>(null);
   const [stopsFailed, setStopsFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const rawTrainId = train?.trainId;
   const trainId = rawTrainId != null && /^\d+$/.test(String(rawTrainId)) ? String(rawTrainId) : null;
@@ -73,6 +74,27 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
       </div>
     );
   }
+
+  const shareEta = async () => {
+    const arrival = stops && stops.length > 0 ? stops[stops.length - 1] : null;
+    const etaStr = arrival
+      ? new Date(arrival.actualTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+      : null;
+    const text = arrival && etaStr
+      ? `I'm on the ${train.trainCategory} to ${train.direction}, arriving at ${arrival.name} around ${etaStr}.`
+      : `I'm on the ${train.trainCategory} to ${train.direction}.`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // user dismissed the share sheet
+    }
+  };
 
   const hereIdx = stops && fromCode ? stops.findIndex(s => s.code === fromCode) : -1;
   const crowding = train.crowding;
@@ -200,18 +222,13 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
 
       {/* Footer actions */}
       <div style={{ padding: '16px 18px', display: 'flex', gap: 10 }}>
-        <button style={{
+        <button onClick={shareEta} style={{
           flex: 1, padding: 14, borderRadius: 13, fontSize: 14, fontWeight: 700,
           background: 'var(--primary)', color: '#FFFFFF', textAlign: 'center',
         }}>
-          Set arrival alert
+          {copied ? 'Copied to clipboard' : 'Share ETA'}
         </button>
-        <button style={{
-          flex: 1, padding: 14, borderRadius: 13, fontSize: 14, fontWeight: 700,
-          background: 'var(--card)', color: 'var(--ink)', border: '1px solid var(--line)', textAlign: 'center',
-        }}>
-          Share ETA
-        </button>
+        <span aria-live="polite" className="sr-only">{copied ? 'ETA copied to clipboard' : ''}</span>
       </div>
 
       <div style={{ height: 80 }} />

@@ -92,7 +92,7 @@ export default function Home() {
   const activeNav = tab === 'station' ? (station?.origin ?? 'pulse') : tab;
 
   let content: React.ReactNode;
-  if      (tab === 'rhythm')  content = <RhythmView  tweaks={tweaks} homeStation={commute.home} workStation={commute.work} onOpenJourney={openJourney} onOpenStation={openStation} />;
+  if      (tab === 'rhythm')  content = <RhythmView  tweaks={tweaks} homeStation={commute.home} workStation={commute.work} onOpenJourney={openJourney} onOpenStation={openStation} onEditCommute={() => setShowTweaks(true)} />;
   else if (tab === 'pulse')   content = <PulseView   tweaks={tweaks} onOpenJourney={openJourney} onOpenStation={openStation} />;
   else if (tab === 'journey') content = <JourneyView train={journey?.train ?? null} fromCode={journey?.fromCode} onBack={() => setTab('rhythm')} onNavigate={goTo} />;
   else if (tab === 'station') content = <StationView station={station?.station ?? null} tweaks={tweaks} onBack={() => setTab(station?.origin ?? 'pulse')} onOpenJourney={openJourney} />;

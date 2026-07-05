@@ -14,6 +14,7 @@ interface RhythmViewProps {
   workStation: { code: string; name: string } | null;
   onOpenJourney: (train: IDeparture, fromCode?: string) => void;
   onOpenStation: (station: { code: string; name: string }) => void;
+  onEditCommute: () => void;
 }
 
 const DEMO_BASELINE = {
@@ -23,7 +24,7 @@ const DEMO_BASELINE = {
   avgCrowding: 0.62,
 };
 
-export default function RhythmView({ tweaks, homeStation, workStation, onOpenJourney }: RhythmViewProps) {
+export default function RhythmView({ tweaks, homeStation, workStation, onOpenJourney, onOpenStation, onEditCommute }: RhythmViewProps) {
   const home = homeStation ?? { code: 'ASD', name: 'Amsterdam Centraal' };
   const work = workStation ?? { code: 'UT', name: 'Utrecht Centraal' };
   const [now, setNow] = useState(new Date());
@@ -108,7 +109,7 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
 
       {/* Commute chip — mobile */}
       <div className="rhythm-commute-chip" style={{ padding: '0 18px 12px' }}>
-        <button style={{
+        <button onClick={onEditCommute} aria-label={`Edit commute: ${home.name} to ${work.name}`} style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           padding: '8px 14px', background: 'var(--card)', border: '1px solid var(--line)',
           borderRadius: 999, fontSize: 13, fontWeight: 600, color: 'var(--ink)',
@@ -140,11 +141,11 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
 
           {/* Smart swap */}
           {yourTrain && yourTrain.delayMinutes >= 2 && (
-            <SmartSwap train={yourTrain} alternatives={alternatives.slice(1)} />
+            <SmartSwap train={yourTrain} alternatives={alternatives.slice(1)} onSwap={d => onOpenJourney(d, home.code)} />
           )}
 
           {/* Later today */}
-          <LaterToday departures={departures} onOpen={d => onOpenJourney(d, home.code)} tweaks={tweaks} homeCode={home.code} />
+          <LaterToday departures={departures} onOpen={d => onOpenJourney(d, home.code)} tweaks={tweaks} home={home} onSeeAll={() => onOpenStation(home)} />
         </div>
 
         <div className="rhythm-col-r">
@@ -273,7 +274,7 @@ function HeroCard({ train, home, now, onClick }: {
 
 /* ── Smart Swap ── */
 
-function SmartSwap({ train, alternatives }: { train: IDeparture; alternatives: IDeparture[] }) {
+function SmartSwap({ train, alternatives, onSwap }: { train: IDeparture; alternatives: IDeparture[]; onSwap: (d: IDeparture) => void }) {
   const best = alternatives[0];
   if (!best) return null;
   const bestTime = new Date(best.actualDateTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
@@ -297,6 +298,7 @@ function SmartSwap({ train, alternatives }: { train: IDeparture; alternatives: I
           The <strong>{bestTime} {best.trainCategory}</strong> beats your delayed train and is emptier.
         </div>
         <button
+          onClick={() => onSwap(best)}
           aria-label={`Wissel naar de ${bestTime} ${best.trainCategory}`}
           style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', padding: '4px 8px', whiteSpace: 'nowrap' }}
         >
@@ -338,14 +340,14 @@ function StatTile({ big, suffix, label }: { big: string; suffix: string; label: 
 
 /* ── Later Today ── */
 
-function LaterToday({ departures, onOpen, tweaks, homeCode }: { departures: IDeparture[] | null; onOpen: (d: IDeparture) => void; tweaks: ITweaks; homeCode: string }) {
+function LaterToday({ departures, onOpen, tweaks, home, onSeeAll }: { departures: IDeparture[] | null; onOpen: (d: IDeparture) => void; tweaks: ITweaks; home: { code: string; name: string }; onSeeAll: () => void }) {
   if (!departures) return null;
   const list = departures.slice(0, tweaks.verbosity === 'minimal' ? 3 : 6);
   return (
     <div style={{ padding: '16px 18px 4px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-        <h2 className="eyebrow">LATER TODAY · {homeCode}</h2>
-        <button style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>See all</button>
+        <h2 className="eyebrow">LATER TODAY · {home.code}</h2>
+        <button onClick={onSeeAll} aria-label={`See all departures from ${home.name}`} style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)' }}>See all</button>
       </div>
       <div className="card" style={{ padding: '0 14px', borderRadius: 16 }}>
         {list.map(d => (
