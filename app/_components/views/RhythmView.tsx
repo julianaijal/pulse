@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { IDeparture, ITweaks } from '../../interfaces/interfaces';
-import { generateDepartures } from '../../_utils/mock';
+import { useDepartures } from '../../_hooks/useDepartures';
 import { IconSwap } from '../icons/Icons';
 import CrowdingStrip from '../shared/CrowdingStrip';
 import DepartureRow from '../shared/DepartureRow';
@@ -28,51 +28,12 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
   const home = homeStation ?? { code: 'ASD', name: 'Amsterdam Centraal' };
   const work = workStation ?? { code: 'UT', name: 'Utrecht Centraal' };
   const [now, setNow] = useState(new Date());
-  const [departures, setDepartures] = useState<IDeparture[] | null>(null);
+  const departures = useDepartures(home.code);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
     return () => clearInterval(t);
   }, []);
-
-  useEffect(() => {
-    let active = true;
-    let abortCtrl: AbortController | null = null;
-    let hasData = false;
-
-    const fetchData = async () => {
-      if (!active || document.visibilityState !== 'visible') return;
-      abortCtrl?.abort();
-      const ctrl = new AbortController();
-      abortCtrl = ctrl;
-      try {
-        const res = await fetch(`/api/departures/${home.code}`, { signal: ctrl.signal });
-        if (res.ok) {
-          const data = await res.json();
-          if (active && Array.isArray(data) && data.length > 0) {
-            hasData = true;
-            setDepartures(data);
-            return;
-          }
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
-      }
-      if (active && !hasData) setDepartures(generateDepartures(home.code, new Date()));
-    };
-
-    fetchData();
-    const timer = setInterval(fetchData, 60_000);
-    const onVisibility = () => { if (document.visibilityState === 'visible') fetchData(); };
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      active = false;
-      abortCtrl?.abort();
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [home.code]);
 
   const yourTrain = useMemo(() => {
     if (!departures) return null;

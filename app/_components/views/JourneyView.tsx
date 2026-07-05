@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { IDeparture, IStop } from '../../interfaces/interfaces';
+import { useJourney } from '../../_hooks/useJourney';
 import { IconBack } from '../icons/Icons';
 import Loader from '../_partials/Loader';
 
@@ -19,36 +20,12 @@ function quietestIdx(crowding: number[]): number {
 }
 
 export default function JourneyView({ train, fromCode, onBack, onNavigate }: JourneyViewProps) {
-  const [stops, setStops] = useState<IStop[] | null>(null);
-  const [stopsFailed, setStopsFailed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const rawTrainId = train?.trainId;
   const trainId = rawTrainId != null && /^\d+$/.test(String(rawTrainId)) ? String(rawTrainId) : null;
 
-  useEffect(() => {
-    if (!trainId) {
-      queueMicrotask(() => { setStops(null); setStopsFailed(true); });
-      return;
-    }
-    queueMicrotask(() => { setStops(null); setStopsFailed(false); });
-
-    let active = true;
-    const ctrl = new AbortController();
-    fetch(`/api/journey/${trainId}`, { signal: ctrl.signal })
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        if (!active) return;
-        if (Array.isArray(data) && data.length > 0) setStops(data);
-        else setStopsFailed(true);
-      })
-      .catch(err => {
-        if (err instanceof Error && err.name === 'AbortError') return;
-        if (active) setStopsFailed(true);
-      });
-
-    return () => { active = false; ctrl.abort(); };
-  }, [trainId]);
+  const { stops, failed: stopsFailed } = useJourney(trainId);
 
   if (!train) {
     return (
