@@ -54,8 +54,8 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
     return (
       <div className="view fade-up">
         <div style={{ padding: '18px 18px 6px' }}>
-          <button onClick={onBack} aria-label="Back" style={{
-            width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
+          <button onClick={onBack} aria-label="Back" className="hit-target" style={{
+            position: 'relative', width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
             border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <IconBack aria-hidden="true" style={{ width: 16, height: 16, color: 'var(--ink)' }} />
@@ -105,8 +105,8 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
     <div className="view fade-up">
       {/* Header */}
       <div style={{ padding: '18px 18px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={onBack} aria-label="Back" style={{
-          width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
+        <button onClick={onBack} aria-label="Back" className="hit-target" style={{
+          position: 'relative', width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
           border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
           <IconBack aria-hidden="true" style={{ width: 16, height: 16, color: 'var(--ink)' }} />
@@ -122,18 +122,20 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
           to {train.direction}
         </h1>
 
-        {/* Track box */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 10,
-            border: '1.5px solid var(--line)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 800,
-          }}>
-            {train.actualTrack}
+        {/* Track box — hidden when track is unknown (e.g. journeys opened from the map) */}
+        {train.actualTrack && train.actualTrack !== '—' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 10,
+              border: '1.5px solid var(--line)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16, fontWeight: 800,
+            }}>
+              {train.actualTrack}
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--ink-3)', marginTop: 2 }}>TRACK</span>
           </div>
-          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--ink-3)', marginTop: 2 }}>TRACK</span>
-        </div>
+        )}
       </div>
 
       {/* Where to stand */}
@@ -273,7 +275,7 @@ function StopRow({ stop, here, last, isPast }: { stop: IStop; here: boolean; las
             {stop.track && stop.status !== 'DESTINATION' ? ` · track ${stop.track}` : ''}
           </span>
           {delayed && delayMin > 0 && (
-            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-text)' }}>+{delayMin}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-text)' }}>+{delayMin} min</span>
           )}
         </div>
       </div>
