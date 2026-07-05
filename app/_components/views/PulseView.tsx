@@ -31,11 +31,6 @@ const MAP_ROUTES: [number,number,number,number][] = [
   [122.8,303.8,153.5,229.6],
 ];
 
-const DISRUPTION_ZONES = [
-  { cx: 171, cy: 227, r: 59, type: 'active' as const },
-  { cx: 124, cy: 257.3, r: 42, type: 'resolved' as const },
-];
-
 const MAJOR_LABELS: Record<string, string> = {
   ASD: 'Amsterdam C', UT: 'Utrecht C', RTD: 'Rotterdam C',
   GVC: 'Den Haag C', EHV: 'Eindhoven', GN: 'Groningen', ZL: 'Zwolle',
@@ -45,14 +40,33 @@ type Filter = 'all' | 'ic' | 'spr' | 'delayed';
 
 export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewProps) {
   const [trains, setTrains] = useState<IActiveTrain[]>(() => generateActiveTrains(40));
-  const [disruptions] = useState<IDisruption[]>(() => generateDisruptions());
+  const [disruptions, setDisruptions] = useState<IDisruption[]>(() => generateDisruptions());
   const [selected, setSelected] = useState<IActiveTrain | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const rafRef = useRef<number | null>(null);
   const lastTsRef = useRef<number>(0);
 
   useEffect(() => {
-    fetch('/api/disruptions').then(r => r.json()).catch(() => null);
+    let cancelled = false;
+    const load = () => {
+      fetch('/api/disruptions')
+        .then(r => (r.ok ? r.json() : null))
+        .then((data: IDisruption[] | null) => {
+          if (!cancelled && Array.isArray(data) && data.length > 0) setDisruptions(data);
+        })
+        .catch(() => { /* keep current data */ });
+    };
+    load();
+    const interval = setInterval(load, 60_000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   useEffect(() => {
@@ -138,11 +152,11 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
               {/* NL outline */}
               <path d={MAP_NL_PATH} fill="var(--map-land)" stroke="var(--map-stroke)" strokeWidth="1.5" />
 
-              {/* Disruption zones */}
-              {DISRUPTION_ZONES.map((z, i) => (
-                <circle key={i} cx={z.cx} cy={z.cy} r={z.r}
-                  fill={z.type === 'active' ? 'rgba(255,179,0,0.13)' : 'rgba(90,107,130,0.12)'}
-                  stroke={z.type === 'active' ? 'var(--warn)' : 'var(--ink-4)'}
+              {/* Disruption zones (normalized centers/radii projected onto the 420×540 viewBox) */}
+              {disruptions.filter(d => d.severity > 0).map(d => (
+                <circle key={d.id} cx={d.center.x * 420} cy={d.center.y * 540} r={d.radius * 420}
+                  fill={d.severity > 0.5 ? 'rgba(255,179,0,0.13)' : 'rgba(90,107,130,0.12)'}
+                  stroke={d.severity > 0.5 ? 'var(--warn)' : 'var(--ink-4)'}
                   strokeWidth="1.5" strokeDasharray="4 4" />
               ))}
 
