@@ -7,6 +7,7 @@ vi.mock("../../_lib/rateLimit", () => ({
 }));
 vi.mock("../../_utils/mock", () => ({
   generateDisruptions: vi.fn(() => [{ id: "mock-disruption" }]),
+  project: vi.fn(() => ({ x: 0.5, y: 0.5 })),
 }));
 
 import { GET } from "./route";
@@ -20,19 +21,85 @@ afterEach(() => {
 });
 
 describe("GET /api/disruptions", () => {
-  it("returns the NS payload on success", async () => {
-    const disruptions = [{ id: "ns-1", title: "Werkzaamheden Utrecht" }];
+  it("maps NS v3 disruptions to the app shape", async () => {
+    const nsItem = {
+      id: "6065640",
+      type: "DISRUPTION",
+      title: "Den Haag - Rotterdam - Dordrecht.",
+      expectedDuration: { description: "Dit duurt ten minste tot dinsdag 7 juli 5:00 uur." },
+      publicationSections: [
+        {
+          section: {
+            stations: [
+              { coordinate: { lat: 52.08, lng: 4.32 }, countryCode: "NL", stationCode: "GVC" },
+              { coordinate: { lat: 51.92, lng: 4.47 }, countryCode: "NL", stationCode: "RTD" },
+              { coordinate: { lat: 51.81, lng: 4.66 }, countryCode: "NL", stationCode: "DDR" },
+            ],
+          },
+        },
+      ],
+      timespans: [
+        {
+          situation: { label: "Door een stroomstoring: tussen Rotterdam Centraal en Zwijndrecht rijden er geen treinen." },
+          additionalTravelTime: { shortLabel: "Extra reistijd 30 min." },
+        },
+      ],
+    };
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({ payload: disruptions }),
-      })
+      vi.fn().mockResolvedValue({ ok: true, json: async () => [nsItem] })
     );
 
     const res = await GET(makeReq());
 
-    expect(await res.json()).toEqual(disruptions);
+    expect(await res.json()).toEqual([
+      {
+        id: "6065640",
+        type: "storm",
+        label: "Den Haag - Rotterdam - Dordrecht",
+        center: { x: 0.5, y: 0.5 },
+        radius: 0.1,
+        severity: 0.8,
+        lines: ["GVC → DDR"],
+        impact: "Extra reistijd 30 min.",
+        message: "Door een stroomstoring: tussen Rotterdam Centraal en Zwijndrecht rijden er geen treinen.",
+      },
+    ]);
+  });
+
+  it("maps MAINTENANCE to a low-severity fog disruption", async () => {
+    const nsItem = {
+      id: "9001",
+      type: "MAINTENANCE",
+      title: "Utrecht - Arnhem.",
+      timespans: [{ situation: { label: "Door werkzaamheden: tussen Driebergen-Zeist en Ede-Wageningen rijden er geen treinen." } }],
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => [nsItem] })
+    );
+
+    const res = await GET(makeReq());
+    const body = await res.json();
+
+    expect(body[0]).toMatchObject({
+      type: "fog",
+      severity: 0.45,
+      impact: "",
+      center: { x: 0.5, y: 0.5 },
+      lines: [],
+    });
+  });
+
+  it("falls back to mock data when NS returns an empty list", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => [] })
+    );
+
+    const res = await GET(makeReq());
+
+    expect(await res.json()).toEqual([{ id: "mock-disruption" }]);
   });
 
   it("falls back to mock data when NS responds non-ok", async () => {
