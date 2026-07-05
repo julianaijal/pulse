@@ -1,23 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { IDeparture } from '../interfaces/interfaces';
 import { generateDepartures } from '../_utils/mock';
+
+export type DataSource = 'loading' | 'live' | 'demo';
 
 /**
  * Live departure board for a station: fetch on mount, poll every 60s,
  * refetch when the tab becomes visible, and fall back to demo data
- * when the NS API is unavailable.
+ * when the NS API is unavailable. `source` reports whether the data is
+ * live or demo, and `retry` forces a fresh fetch.
  */
-export function useDepartures(code: string | null | undefined): IDeparture[] | null {
+export function useDepartures(code: string | null | undefined): {
+  departures: IDeparture[] | null;
+  source: DataSource;
+  retry: () => void;
+} {
   const [departures, setDepartures] = useState<IDeparture[] | null>(null);
+  const [source, setSource] = useState<DataSource>('loading');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!code) return;
-    queueMicrotask(() => setDepartures(null));
+    queueMicrotask(() => { setDepartures(null); setSource('loading'); });
     let active = true;
     let abortCtrl: AbortController | null = null;
-    let hasData = false;
+    let hasLiveData = false;
 
     const fetchData = async () => {
       if (!active || document.visibilityState !== 'visible') return;
@@ -29,15 +38,19 @@ export function useDepartures(code: string | null | undefined): IDeparture[] | n
         if (res.ok) {
           const data = await res.json();
           if (active && Array.isArray(data) && data.length > 0) {
-            hasData = true;
+            hasLiveData = true;
             setDepartures(data);
+            setSource('live');
             return;
           }
         }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
       }
-      if (active && !hasData) setDepartures(generateDepartures(code, new Date()));
+      if (active && !hasLiveData) {
+        setDepartures(generateDepartures(code, new Date()));
+        setSource('demo');
+      }
     };
 
     fetchData();
@@ -51,7 +64,9 @@ export function useDepartures(code: string | null | undefined): IDeparture[] | n
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [code]);
+  }, [code, attempt]);
 
-  return departures;
+  const retry = useCallback(() => setAttempt(a => a + 1), []);
+
+  return { departures, source, retry };
 }
