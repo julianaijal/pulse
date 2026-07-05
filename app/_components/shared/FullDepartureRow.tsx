@@ -15,7 +15,7 @@ export default function FullDepartureRow({ d, onOpen }: FullDepartureRowProps) {
   return (
     <button
       onClick={onOpen}
-      aria-label={`${d.direction}, departs ${timeStr}${d.delayMinutes > 0 ? `, ${d.delayMinutes} min delay` : ', on time'}${d.cancelled ? ', cancelled' : ''}. Opens journey details.`}
+      aria-label={`${d.direction}, departs ${timeStr}${d.delayMinutes > 0 ? `, ${d.delayMinutes} min delay` : ', on time'}${d.cancelled ? ', cancelled' : ''}${d.trackChanged && !d.cancelled ? `, track changed to ${d.actualTrack}` : ''}. Opens journey details.`}
       style={{
         width: '100%', padding: '12px 0', display: 'flex', gap: 12, alignItems: 'center',
         borderBottom: '1px solid var(--line-row)', textAlign: 'left',
@@ -46,7 +46,10 @@ export default function FullDepartureRow({ d, onOpen }: FullDepartureRowProps) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{d.direction}</div>
         <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>
-          {d.trainCategory} {d.trainId ?? ''}{d.trackChanged ? ' · track changed' : ''}
+          {d.trainCategory} {d.trainId ?? ''}
+          {d.trackChanged && !d.cancelled && (
+            <span style={{ fontWeight: 800, color: 'var(--warn-text)' }}> · track changed</span>
+          )}
         </div>
       </div>
 
@@ -61,8 +64,11 @@ export default function FullDepartureRow({ d, onOpen }: FullDepartureRowProps) {
       {/* Track badge */}
       <span style={{
         minWidth: 28, textAlign: 'center', padding: '2px 6px',
-        border: '1.5px solid var(--line)', borderRadius: 7,
-        fontSize: 12, fontWeight: 700, color: 'var(--ink)',
+        border: d.trackChanged && !d.cancelled ? '1.5px solid var(--warn-accent)' : '1.5px solid var(--line)',
+        background: d.trackChanged && !d.cancelled ? 'var(--warn-tint)' : 'transparent',
+        borderRadius: 7,
+        fontSize: 12, fontWeight: d.trackChanged && !d.cancelled ? 800 : 700,
+        color: d.trackChanged && !d.cancelled ? 'var(--warn-text)' : 'var(--ink)',
       }}>
         {d.cancelled ? '—' : d.actualTrack}
       </span>
