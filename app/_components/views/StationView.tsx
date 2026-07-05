@@ -8,6 +8,7 @@ import { formatTime } from '../../_utils/format';
 import { IconBack, IconClose, IconSearch } from '../icons/Icons';
 import FullDepartureRow from '../shared/FullDepartureRow';
 import NowPill from '../shared/NowPill';
+import DemoDataBanner from '../shared/DemoDataBanner';
 
 interface StationObj {
   code: string;
@@ -120,7 +121,7 @@ export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: 
 }
 
 export default function StationView({ station, onBack, onOpenJourney }: StationViewProps) {
-  const departures = useDepartures(station?.code);
+  const { departures, source, retry } = useDepartures(station?.code);
 
   if (!station) return null;
 
@@ -151,6 +152,13 @@ export default function StationView({ station, onBack, onOpenJourney }: StationV
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {departures ? `${departures.length} departures loaded` : ''}
       </div>
+
+      {/* Demo-data notice */}
+      {source === 'demo' && (
+        <div style={{ padding: '12px 18px 0' }}>
+          <DemoDataBanner onRetry={retry} />
+        </div>
+      )}
 
       {/* Board */}
       <div style={{ padding: '16px 18px 0' }}>

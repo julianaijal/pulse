@@ -20,7 +20,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
   const rawTrainId = train?.trainId;
   const trainId = rawTrainId != null && /^\d+$/.test(String(rawTrainId)) ? String(rawTrainId) : null;
 
-  const { stops, failed: stopsFailed } = useJourney(trainId);
+  const { stops, failed: stopsFailed, retry: retryStops } = useJourney(trainId);
 
   if (!train) {
     return (
@@ -212,7 +212,17 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
               ))}
             </ol>
           ) : stopsFailed ? (
-            <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>Stops unavailable</div>
+            <div role="status" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--ink-3)' }}>
+              <span>Stops unavailable</span>
+              {trainId && (
+                <button onClick={retryStops} style={{
+                  padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                  background: 'transparent', border: '1px solid var(--line)', color: 'var(--ink)',
+                }}>
+                  Retry
+                </button>
+              )}
+            </div>
           ) : (
             <Loader />
           )}
