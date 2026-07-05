@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { IDeparture, ITweaks } from '../../interfaces/interfaces';
-import { generateDepartures } from '../../_utils/mock';
+import { useDepartures } from '../../_hooks/useDepartures';
+import { formatTime, quietestCar } from '../../_utils/format';
 import { IconSwap } from '../icons/Icons';
 import CrowdingStrip from '../shared/CrowdingStrip';
 import DepartureRow from '../shared/DepartureRow';
@@ -28,51 +29,12 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
   const home = homeStation ?? { code: 'ASD', name: 'Amsterdam Centraal' };
   const work = workStation ?? { code: 'UT', name: 'Utrecht Centraal' };
   const [now, setNow] = useState(new Date());
-  const [departures, setDepartures] = useState<IDeparture[] | null>(null);
+  const departures = useDepartures(home.code);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
     return () => clearInterval(t);
   }, []);
-
-  useEffect(() => {
-    let active = true;
-    let abortCtrl: AbortController | null = null;
-    let hasData = false;
-
-    const fetchData = async () => {
-      if (!active || document.visibilityState !== 'visible') return;
-      abortCtrl?.abort();
-      const ctrl = new AbortController();
-      abortCtrl = ctrl;
-      try {
-        const res = await fetch(`/api/departures/${home.code}`, { signal: ctrl.signal });
-        if (res.ok) {
-          const data = await res.json();
-          if (active && Array.isArray(data) && data.length > 0) {
-            hasData = true;
-            setDepartures(data);
-            return;
-          }
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
-      }
-      if (active && !hasData) setDepartures(generateDepartures(home.code, new Date()));
-    };
-
-    fetchData();
-    const timer = setInterval(fetchData, 60_000);
-    const onVisibility = () => { if (document.visibilityState === 'visible') fetchData(); };
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      active = false;
-      abortCtrl?.abort();
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [home.code]);
 
   const yourTrain = useMemo(() => {
     if (!departures) return null;
@@ -158,14 +120,6 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
   );
 }
 
-/* ── Helper ── */
-
-function quietestCar(crowding: number[]): number {
-  let min = 1, idx = 0;
-  crowding.forEach((c, i) => { if (c < min) { min = c; idx = i; } });
-  return idx;
-}
-
 /* ── Hero Card ── */
 
 function HeroCard({ train, home, now, onClick }: {
@@ -178,14 +132,14 @@ function HeroCard({ train, home, now, onClick }: {
   const planned = new Date(train.plannedDateTime);
   const minsTo = Math.max(0, Math.round((actual.getTime() - now.getTime()) / 60000));
   const late = train.delayMinutes;
-  const timeStr = actual.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const plannedStr = planned.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const timeStr = formatTime(actual);
+  const plannedStr = formatTime(planned);
   const crowding = train.crowding ?? [];
   const quietIdx = crowding.length > 0 ? quietestCar(crowding) : -1;
 
   // Walk-by time: subtract 12 minutes from departure
   const walkBy = new Date(actual.getTime() - 12 * 60000);
-  const walkByStr = walkBy.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const walkByStr = formatTime(walkBy);
 
   return (
     <button onClick={onClick} aria-label={`Your train to ${train.direction}, departs ${timeStr}${late > 0 ? `, ${late} min delay` : ', on time'}${train.trackChanged ? `, track changed to ${train.actualTrack}` : ''}. Opens journey details.`} style={{
@@ -281,7 +235,7 @@ function HeroCard({ train, home, now, onClick }: {
 function SmartSwap({ train, alternatives, onSwap }: { train: IDeparture; alternatives: IDeparture[]; onSwap: (d: IDeparture) => void }) {
   const best = alternatives[0];
   if (!best) return null;
-  const bestTime = new Date(best.actualDateTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const bestTime = formatTime(best.actualDateTime);
 
   return (
     <div style={{ padding: '12px 18px 0' }}>

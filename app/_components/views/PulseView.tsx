@@ -74,14 +74,19 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
     // untappable moving targets; freeze positions under reduced motion.
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+    // ~10fps is plenty for slow-moving dots and avoids re-rendering the
+    // whole view (40 cloned train objects) at 60fps.
+    const FRAME_MS = 100;
     const loop = (ts: number) => {
       const dt = ts - lastTsRef.current;
-      lastTsRef.current = ts;
-      setTrains(prev => prev.map(tr => {
-        let t = tr.t + tr.speed * dt;
-        if (t > 1) t = 0;
-        return { ...tr, t };
-      }));
+      if (dt >= FRAME_MS) {
+        lastTsRef.current = ts;
+        setTrains(prev => prev.map(tr => {
+          let t = tr.t + tr.speed * dt;
+          if (t > 1) t = 0;
+          return { ...tr, t };
+        }));
+      }
       rafRef.current = requestAnimationFrame(loop);
     };
 

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { IDeparture } from '../../interfaces/interfaces';
+import { formatTime } from '../../_utils/format';
 
 interface DepartureRowProps {
   d: IDeparture;
@@ -9,8 +10,7 @@ interface DepartureRowProps {
 }
 
 export default function DepartureRow({ d, onClick }: DepartureRowProps) {
-  const actual = new Date(d.actualDateTime);
-  const timeStr = actual.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const timeStr = formatTime(d.actualDateTime);
 
   return (
     <button

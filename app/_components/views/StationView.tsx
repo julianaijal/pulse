@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { IDeparture } from '../../interfaces/interfaces';
-import { generateDepartures, STATIONS } from '../../_utils/mock';
+import { STATIONS } from '../../_utils/mock';
+import { useDepartures } from '../../_hooks/useDepartures';
+import { formatTime } from '../../_utils/format';
 import { IconBack, IconClose, IconSearch } from '../icons/Icons';
 import FullDepartureRow from '../shared/FullDepartureRow';
 import NowPill from '../shared/NowPill';
@@ -118,53 +120,11 @@ export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: 
 }
 
 export default function StationView({ station, onBack, onOpenJourney }: StationViewProps) {
-  const [departures, setDepartures] = useState<IDeparture[] | null>(null);
-
-  useEffect(() => {
-    if (!station) return;
-    queueMicrotask(() => setDepartures(null));
-    let active = true;
-    let abortCtrl: AbortController | null = null;
-    let hasData = false;
-
-    const fetchData = async () => {
-      if (!active || document.visibilityState !== 'visible') return;
-      abortCtrl?.abort();
-      const ctrl = new AbortController();
-      abortCtrl = ctrl;
-      try {
-        const res = await fetch(`/api/departures/${station.code}`, { signal: ctrl.signal });
-        if (res.ok) {
-          const data = await res.json();
-          if (active && Array.isArray(data) && data.length > 0) {
-            hasData = true;
-            setDepartures(data);
-            return;
-          }
-        }
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
-      }
-      if (active && !hasData) setDepartures(generateDepartures(station.code, new Date()));
-    };
-
-    fetchData();
-    const timer = setInterval(fetchData, 60_000);
-    const onVisibility = () => { if (document.visibilityState === 'visible') fetchData(); };
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      active = false;
-      abortCtrl?.abort();
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [station?.code]);
+  const departures = useDepartures(station?.code);
 
   if (!station) return null;
 
-  const now = new Date();
-  const updatedStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const updatedStr = formatTime(new Date());
 
   return (
     <div className="view fade-up">
