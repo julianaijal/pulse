@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { IDeparture, IActiveTrain, IDisruption, ITweaks } from '../../interfaces/interfaces';
-import { generateActiveTrains, generateDisruptions, STATIONS, project } from '../../_utils/mock';
+import { generateActiveTrains, generateDisruptions, STATIONS } from '../../_utils/mock';
 import { IconClose, IconArrow } from '../icons/Icons';
+import NowPill from '../shared/NowPill';
 
 interface PulseViewProps {
   tweaks: ITweaks;
@@ -11,49 +12,50 @@ interface PulseViewProps {
   onOpenStation: (station: { code: string; name: string; lat?: number; lng?: number }) => void;
 }
 
-const MAJOR_STATIONS = ['ASD', 'UT', 'RTD', 'GVC', 'SHL', 'EHV'];
+// Precomputed from map-geometry.txt for 420×540 viewBox
+const MAP_STATIONS: Record<string, [number, number]> = {
+  ASD:[168,216.2],UT:[190.1,272],RTD:[122.8,303.8],GVC:[107.6,273.7],
+  SHL:[153.5,229.6],EHV:[228.8,396.7],LEDN:[124.1,257.2],HLM:[140.5,214.5],
+  AMF:[217.8,259.8],ZL:[293.1,192],GN:[342.8,55.8],MT:[252.6,511.1],
+  BD:[155.4,367.3],HT:[209.3,349],
+};
 
-const ROUTES = [
-  ['ASD','UT'], ['UT','EHV'], ['EHV','MT'], ['ASD','SHL'], ['SHL','LEDN'],
-  ['LEDN','GVC'], ['GVC','RTD'], ['RTD','BD'], ['BD','EHV'], ['ASD','AMF'],
-  ['AMF','UT'], ['AMF','ZL'], ['ZL','GN'], ['RTD','UT'], ['HLM','ASD'],
-  ['LEDN','SHL'], ['UT','HT'], ['HT','EHV'], ['ASD','HLM'], ['RTD','SHL'],
+const MAP_NL_PATH = 'M5.3,443.6 L21,385.7 L42,376.1 L94.5,405 L136.5,395.4 L183.8,395.4 L199.5,443.6 L262.5,520.7 L294,511.1 L283.5,443.6 L304.5,385.7 L325.5,318.2 L399,241.1 L409.5,173.6 L367.5,106.1 L383.3,57.9 L409.5,38.6 L357,0 L273,9.6 L199.5,19.3 L147,77.1 L183.8,125.4 L152.3,192.9 L131.3,221.8 L94.5,270 L63,337.5 L21,376.1 Z';
+
+const MAP_ROUTES: [number,number,number,number][] = [
+  [168,216.2,190.1,272],[190.1,272,228.8,396.7],[228.8,396.7,252.6,511.1],
+  [168,216.2,153.5,229.6],[153.5,229.6,124.1,257.2],[124.1,257.2,107.6,273.7],
+  [107.6,273.7,122.8,303.8],[122.8,303.8,155.4,367.3],[155.4,367.3,228.8,396.7],
+  [168,216.2,217.8,259.8],[217.8,259.8,190.1,272],[217.8,259.8,293.1,192],
+  [293.1,192,342.8,55.8],[122.8,303.8,190.1,272],[168,216.2,140.5,214.5],
+  [124.1,257.2,153.5,229.6],[190.1,272,209.3,349],[209.3,349,228.8,396.7],
+  [122.8,303.8,153.5,229.6],
 ];
 
-const NL_PTS: [number, number][] = [
-  [3.35,51.20],[3.50,51.50],[3.70,51.55],[4.20,51.40],[4.60,51.45],
-  [5.05,51.45],[5.20,51.20],[5.80,50.80],[6.10,50.85],[6.00,51.20],
-  [6.20,51.50],[6.40,51.85],[7.10,52.25],[7.20,52.60],[6.80,52.95],
-  [6.95,53.20],[7.20,53.30],[6.70,53.50],[5.90,53.45],[5.20,53.40],
-  [4.70,53.10],[5.05,52.85],[4.75,52.50],[4.55,52.35],[4.20,52.10],
-  [3.90,51.75],[3.50,51.55],[3.35,51.20],
+const DISRUPTION_ZONES = [
+  { cx: 171, cy: 227, r: 59, type: 'active' as const },
+  { cx: 124, cy: 257.3, r: 42, type: 'resolved' as const },
 ];
 
-function nlPath(): string {
-  return NL_PTS.map(([lng, lat], i) => {
-    const p = project(lat, lng);
-    return `${i === 0 ? 'M' : 'L'}${(p.x * 400).toFixed(1)},${(p.y * 520).toFixed(1)}`;
-  }).join(' ') + 'Z';
-}
+const MAJOR_LABELS: Record<string, string> = {
+  ASD: 'Amsterdam C', UT: 'Utrecht C', RTD: 'Rotterdam C',
+  GVC: 'Den Haag C', EHV: 'Eindhoven', GN: 'Groningen', ZL: 'Zwolle',
+};
+
+type Filter = 'all' | 'ic' | 'spr' | 'delayed';
 
 export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewProps) {
   const [trains, setTrains] = useState<IActiveTrain[]>(() => generateActiveTrains(40));
-  const [disruptions] = useState<IDisruption[]>(() => {
-    // Try to get live disruptions later; use mock for now
-    return generateDisruptions();
-  });
+  const [disruptions] = useState<IDisruption[]>(() => generateDisruptions());
   const [selected, setSelected] = useState<IActiveTrain | null>(null);
-  const [tick, setTick] = useState(0);
+  const [filter, setFilter] = useState<Filter>('all');
   const rafRef = useRef<number | null>(null);
   const lastTsRef = useRef<number>(0);
 
-  // Try live disruptions
   useEffect(() => {
-    // Non-blocking; mock already set
     fetch('/api/disruptions').then(r => r.json()).catch(() => null);
   }, []);
 
-  // Advance trains via rAF
   useEffect(() => {
     lastTsRef.current = performance.now();
     const loop = (ts: number) => {
@@ -64,329 +66,201 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
         if (t > 1) t = 0;
         return { ...tr, t };
       }));
-      setTick(k => k + 1);
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  const now = new Date();
-  const timeLabel = now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-  const delayed = trains.filter(t => t.delayMin >= 3).length;
-  const onTimeRate = ((trains.length - trains.filter(t => t.delayMin >= 1).length) / trains.length * 100).toFixed(0);
+  const filteredTrains = trains.filter(tr => {
+    if (filter === 'ic') return tr.cat === 'IC' || tr.cat === 'ICD';
+    if (filter === 'spr') return tr.cat === 'SPR';
+    if (filter === 'delayed') return tr.delayMin >= 3;
+    return true;
+  });
+
+  const activeDisruptions = disruptions.filter(d => d.severity > 0.3);
 
   return (
     <div className="view fade-up" style={{ paddingBottom: 0 }}>
-      {/* Screen reader: disruption announcements */}
       <div aria-live="assertive" aria-atomic="true" className="sr-only">
-        {disruptions.filter(d => d.severity > 0.3).map(d => d.label).join(', ')}
+        {activeDisruptions.map(d => d.label).join(', ')}
       </div>
-
-      {/* Screen reader: selected train announcement */}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {selected
-          ? `Trein ${selected.id} geselecteerd: ${selected.from.name} naar ${selected.to.name}${selected.delayMin > 0 ? `, ${selected.delayMin} min vertraging` : ''}.`
-          : ''}
+        {selected ? `Trein ${selected.id} geselecteerd: ${selected.from.name} naar ${selected.to.name}${selected.delayMin > 0 ? `, ${selected.delayMin} min vertraging` : ''}.` : ''}
       </div>
 
-      {/* Masthead */}
-      <div style={{ padding: '24px 20px 12px' }}>
-        <div className="eyebrow" style={{ marginBottom: 4 }}>The Network · live</div>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <div className="serif" style={{ fontSize: 34, lineHeight: 1, letterSpacing: '-0.02em' }}>
-            Pulse<em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>.</em>
-          </div>
-          <span className="now-pill"><span className="dot live" /> {timeLabel}</span>
-        </div>
-        <div className="serif" style={{ fontSize: 16, color: 'var(--ink-2)', marginTop: 4, fontStyle: 'italic' }}>
-          {trains.length} trains moving —{' '}
-          {delayed > 0 ? `${delayed} running late in the Randstad.` : 'the network is running clean.'}
-        </div>
+      {/* Header */}
+      <div style={{ padding: '24px 18px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1 style={{ fontSize: 23, fontWeight: 800, letterSpacing: '-0.02em' }}>Network</h1>
+        <NowPill label={`${trains.length} trains live`} />
       </div>
 
-      {/* Network stats bar — mobile only (desktop shows in side panel) */}
-      <div className="pulse-stats-bar" style={{
-        padding: '0 0 0 0', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
-        borderTop: '1px solid var(--line-2)', borderBottom: '1px solid var(--line-2)', marginTop: 4,
-      }}>
-        <NetStat big={String(trains.length)} label="in motion" />
-        <NetStat big={`${onTimeRate}%`} label="on time" borderLeft />
-        <NetStat big={String(disruptions.filter(d => d.severity > 0).length)} label="disruptions" borderLeft />
-      </div>
-
-      {/* ── Map + disruptions (side-by-side on desktop) ── */}
-      <div className="pulse-map-layout">
-
-      {/* Map area */}
-      <div className="pulse-map-area" style={{ position: 'relative' }}>
-        <svg
-          viewBox="0 0 400 520"
-          preserveAspectRatio="xMidYMid meet"
-          role="img"
-          aria-label="Kaart van het Nederlandse spoornetwerk met live treinposities en verstoringen."
-          style={{ width: '100%', height: 'auto', display: 'block', background: 'var(--bg-2)' }}
-        >
-          <defs>
-            <radialGradient id="grad-storm">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.45" />
-              <stop offset="60%" stopColor="var(--accent)" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="grad-fog">
-              <stop offset="0%" stopColor="var(--warn)" stopOpacity="0.35" />
-              <stop offset="70%" stopColor="var(--warn)" stopOpacity="0.08" />
-              <stop offset="100%" stopColor="var(--warn)" stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="grad-sun">
-              <stop offset="0%" stopColor="var(--ok)" stopOpacity="0.22" />
-              <stop offset="70%" stopColor="var(--ok)" stopOpacity="0.05" />
-              <stop offset="100%" stopColor="var(--ok)" stopOpacity="0" />
-            </radialGradient>
-            <pattern id="dot-grid" width="24" height="24" patternUnits="userSpaceOnUse">
-              <path d="M 24 0 L 0 0 0 24" fill="none" stroke="var(--line-2)" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-
-          {/* Grid background */}
-          <rect width="400" height="520" fill="url(#dot-grid)" />
-
-          {/* NL outline */}
-          <path d={nlPath()} fill="var(--bg-3)" stroke="var(--line)" strokeWidth="0.6" />
-
-          {/* Weather overlays */}
-          {disruptions.map(d => (
-            <g key={d.id}>
-              <circle
-                cx={d.center.x * 400} cy={d.center.y * 520}
-                r={d.radius * 400}
-                fill={`url(#grad-${d.type})`}
-              />
-              {d.severity > 0.3 && (
-                <circle
-                  cx={d.center.x * 400} cy={d.center.y * 520}
-                  r={d.radius * 400 * (0.6 + (tick % 120) / 120 * 0.5)}
-                  fill="none" stroke="var(--accent)" strokeWidth="0.6"
-                  strokeOpacity={0.6 - (tick % 120) / 120 * 0.6}
-                />
-              )}
-            </g>
-          ))}
-
-          {/* Route lines */}
-          {ROUTES.map(([a, b], i) => {
-            const sa = STATIONS.find(s => s.code === a);
-            const sb = STATIONS.find(s => s.code === b);
-            if (!sa || !sb) return null;
-            const pa = project(sa.lat, sa.lng);
-            const pb = project(sb.lat, sb.lng);
-            return (
-              <line key={i}
-                x1={pa.x * 400} y1={pa.y * 520}
-                x2={pb.x * 400} y2={pb.y * 520}
-                stroke="var(--line)" strokeWidth="1"
-              />
-            );
-          })}
-
-          {/* Stations */}
-          {STATIONS.filter((s, i, arr) => arr.findIndex(x => x.code === s.code) === i).map(s => {
-            const p = project(s.lat, s.lng);
-            const major = MAJOR_STATIONS.includes(s.code);
-            return (
-              <g
-                key={s.code}
-                role="button"
-                tabIndex={0}
-                aria-label={`Station ${s.name}`}
-                style={{ cursor: 'pointer' }}
-                onClick={() => onOpenStation(s)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenStation(s); } }}
-              >
-                <circle
-                  cx={p.x * 400} cy={p.y * 520}
-                  r={major ? 3.5 : 2}
-                  fill="var(--bg)" stroke="var(--ink)" strokeWidth="1.5"
-                />
-                {major && (
-                  <text
-                    x={p.x * 400 + 7} y={p.y * 520 + 3}
-                    fontSize="9.5"
-                    fontFamily="JetBrains Mono, monospace"
-                    fill="var(--ink-2)"
-                    style={{ pointerEvents: 'none' }}
-                  >{s.code}</text>
-                )}
-              </g>
-            );
-          })}
-
-          {/* Trains */}
-          {trains.map(tr => {
-            const fp = project(tr.from.lat, tr.from.lng);
-            const tp = project(tr.to.lat, tr.to.lng);
-            const x = (fp.x + (tp.x - fp.x) * tr.t) * 400;
-            const y = (fp.y + (tp.y - fp.y) * tr.t) * 520;
-            const dx = (tp.x - fp.x) * 400;
-            const dy = (tp.y - fp.y) * 520;
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-            const color = tr.delayMin >= 3 ? 'var(--accent)' : tr.delayMin >= 1 ? 'var(--warn)' : 'var(--ink)';
-            const isSel = selected?.id === tr.id;
-            return (
-              <g
-                key={tr.id}
-                role="button"
-                tabIndex={0}
-                aria-label={`Trein ${tr.id} (${tr.cat}): ${tr.from.name} → ${tr.to.name}${tr.delayMin > 0 ? `, ${tr.delayMin} min vertraging` : ', op tijd'}`}
-                transform={`translate(${x}, ${y}) rotate(${angle})`}
-                style={{ cursor: 'pointer' }}
-                onClick={() => setSelected(tr)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(tr); } }}
-              >
-                <rect x={-5} y={-1.5} width={10} height={3} fill={color} rx="0.5" />
-                {isSel && <circle cx={0} cy={0} r={9} fill="none" stroke={color} strokeWidth="0.8" />}
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* Selected train card */}
-        {selected && (
-          <div style={{
-            position: 'absolute', left: 12, right: 12, bottom: 12,
-            background: 'var(--bg)', border: '1px solid var(--line)',
-            borderRadius: 14, padding: 14,
-            boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
-            animation: 'fadeUp 0.2s',
+      {/* Filter chips */}
+      <div style={{ padding: '0 18px 12px', display: 'flex', gap: 8, overflowX: 'auto' }}>
+        {([['all','All'],['ic','Intercity'],['spr','Sprinter'],['delayed','Delayed']] as [Filter,string][]).map(([id, label]) => (
+          <button key={id} onClick={() => setFilter(id)} style={{
+            padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+            background: filter === id ? (id === 'delayed' ? 'transparent' : 'var(--ink)') : 'var(--card)',
+            color: filter === id ? (id === 'delayed' ? 'var(--warn-accent)' : '#FFFFFF') : (id === 'delayed' ? 'var(--warn-accent)' : 'var(--ink-2)'),
+            border: `1px solid ${filter === id && id !== 'delayed' ? 'var(--ink)' : id === 'delayed' ? 'var(--warn-border)' : 'var(--line)'}`,
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <div>
-                <div className="eyebrow" style={{ marginBottom: 2 }}>Train {selected.id.toUpperCase()} · {selected.cat}</div>
-                <div className="serif" style={{ fontSize: 19, lineHeight: 1.2 }}>
-                  {selected.from.name} <em style={{ color: 'var(--ink-3)' }}>→</em> {selected.to.name}
-                </div>
-                <div className="mono" style={{ fontSize: 11.5, color: 'var(--ink-3)', marginTop: 6 }}>
-                  {selected.delayMin > 0 ? `+${selected.delayMin} MIN LATE` : 'ON TIME'} · {(selected.t * 100).toFixed(0)}% ALONG ROUTE
-                </div>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                aria-label="Sluit treinkaart"
-                style={{ padding: 4, color: 'var(--ink-3)' }}
-              >
-                <IconClose style={{ width: 18, height: 18 }} />
-              </button>
-            </div>
-            <button
-              onClick={() => {
-                onOpenJourney({
-                  id: selected.id,
-                  direction: selected.to.name,
-                  destinationCode: selected.to.code,
-                  trainCategory: selected.cat,
-                  trainId: selected.id,
-                  delayMinutes: selected.delayMin,
-                  actualTrack: '—',
-                  plannedTrack: '—',
-                  trackChanged: false,
-                  plannedDateTime: new Date().toISOString(),
-                  actualDateTime: new Date().toISOString(),
-                  cancelled: false,
-                });
-              }}
-              style={{
-                marginTop: 10, width: '100%', padding: '10px 12px',
-                background: 'var(--ink)', color: 'var(--bg)',
-                borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                fontSize: 13, fontWeight: 500,
-              }}
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Map + disruptions */}
+      <div className="pulse-map-layout">
+        <div className="pulse-map-area" style={{ position: 'relative', padding: '0 18px' }}>
+          <div className="card" style={{ borderRadius: 20, overflow: 'hidden' }}>
+            <svg
+              viewBox="0 0 420 540"
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label="Kaart van het Nederlandse spoornetwerk met live treinposities en verstoringen."
+              style={{ width: '100%', height: 'auto', display: 'block' }}
             >
-              <span>View journey</span>
-              <IconArrow style={{ width: 15, height: 15 }} />
-            </button>
-          </div>
-        )}
-      </div>{/* /pulse-map-area */}
+              {/* NL outline */}
+              <path d={MAP_NL_PATH} fill="var(--map-land)" stroke="var(--map-stroke)" strokeWidth="1.5" />
 
-      {/* Disruption side panel */}
-      <div className="pulse-side-panel">
-        <div className="eyebrow" style={{ marginBottom: 10 }}>Today&apos;s weather</div>
+              {/* Disruption zones */}
+              {DISRUPTION_ZONES.map((z, i) => (
+                <circle key={i} cx={z.cx} cy={z.cy} r={z.r}
+                  fill={z.type === 'active' ? 'rgba(255,179,0,0.13)' : 'rgba(90,107,130,0.12)'}
+                  stroke={z.type === 'active' ? 'var(--warn)' : 'var(--ink-4)'}
+                  strokeWidth="1.5" strokeDasharray="4 4" />
+              ))}
 
-        {/* Network stats — repeated in side panel for desktop context */}
-        <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
-          <div>
-            <div className="serif num" style={{ fontSize: 22, lineHeight: 1 }}>{trains.length}</div>
-            <div className="eyebrow" style={{ marginTop: 2 }}>in motion</div>
-          </div>
-          <div style={{ borderLeft: '1px solid var(--line-2)', paddingLeft: 16 }}>
-            <div className="serif num" style={{ fontSize: 22, lineHeight: 1 }}>{onTimeRate}%</div>
-            <div className="eyebrow" style={{ marginTop: 2 }}>on time</div>
-          </div>
-          <div style={{ borderLeft: '1px solid var(--line-2)', paddingLeft: 16 }}>
-            <div className="serif num" style={{ fontSize: 22, lineHeight: 1 }}>{disruptions.filter(d => d.severity > 0).length}</div>
-            <div className="eyebrow" style={{ marginTop: 2 }}>disruptions</div>
+              {/* Route lines */}
+              {MAP_ROUTES.map(([x1,y1,x2,y2], i) => (
+                <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+                  stroke="var(--map-route)" strokeWidth="2.5" strokeLinecap="round" />
+              ))}
+
+              {/* Stations */}
+              {Object.entries(MAP_STATIONS).map(([code, [x, y]]) => {
+                const s = STATIONS.find(s => s.code === code);
+                return (
+                  <g key={code}
+                    role="button" tabIndex={0}
+                    aria-label={`Station ${s?.name ?? code}`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => s && onOpenStation(s)}
+                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && s) { e.preventDefault(); onOpenStation(s); } }}
+                  >
+                    <circle cx={x} cy={y} r={3.5} fill="var(--ink)" />
+                    {MAJOR_LABELS[code] && (
+                      <text x={x + 8} y={y + 4} fontSize="10" fontWeight="700" fill="var(--ink)" style={{ pointerEvents: 'none' }}>
+                        {MAJOR_LABELS[code]}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+
+              {/* Trains */}
+              {filteredTrains.map(tr => {
+                const fp = MAP_STATIONS[tr.from.code];
+                const tp = MAP_STATIONS[tr.to.code];
+                if (!fp || !tp) return null;
+                const x = fp[0] + (tp[0] - fp[0]) * tr.t;
+                const y = fp[1] + (tp[1] - fp[1]) * tr.t;
+                const isDelayed = tr.delayMin >= 3;
+                const isSel = selected?.id === tr.id;
+                return (
+                  <g key={tr.id}
+                    role="button" tabIndex={0}
+                    aria-label={`Trein ${tr.id} (${tr.cat}): ${tr.from.name} → ${tr.to.name}${tr.delayMin > 0 ? `, ${tr.delayMin} min vertraging` : ', op tijd'}`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelected(tr)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(tr); } }}
+                  >
+                    <circle cx={x} cy={y} r={4.5}
+                      fill={isDelayed ? 'var(--warn)' : 'var(--primary)'}
+                      stroke="#FFFFFF" strokeWidth="1.5" />
+                    {isSel && <circle cx={x} cy={y} r={10} fill="none" stroke={isDelayed ? 'var(--warn)' : 'var(--primary)'} strokeWidth="1.5" />}
+                  </g>
+                );
+              })}
+
+              {/* Legend */}
+              <g transform="translate(16, 510)">
+                <circle cx={0} cy={0} r={4} fill="var(--primary)" />
+                <text x={8} y={4} fontSize="10" fontWeight="600" fill="var(--ink-3)">on time</text>
+                <circle cx={65} cy={0} r={4} fill="var(--warn)" />
+                <text x={73} y={4} fontSize="10" fontWeight="600" fill="var(--ink-3)">delayed</text>
+              </g>
+            </svg>
+
+            {/* Selected train card */}
+            {selected && (
+              <div style={{
+                position: 'absolute', left: 30, right: 30, bottom: 24,
+                background: 'var(--card)', border: '1px solid var(--line)',
+                borderRadius: 14, padding: 14,
+                boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
+                animation: 'fadeUp 0.2s',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                  <div>
+                    <div className="eyebrow" style={{ marginBottom: 2 }}>Train {selected.id.toUpperCase()} · {selected.cat}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.2 }}>
+                      {selected.from.name} <span style={{ color: 'var(--ink-3)' }}>→</span> {selected.to.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 4 }}>
+                      {selected.delayMin > 0 ? `+${selected.delayMin} min late` : 'On time'} · {(selected.t * 100).toFixed(0)}% along route
+                    </div>
+                  </div>
+                  <button onClick={() => setSelected(null)} aria-label="Sluit treinkaart" style={{ padding: 4, color: 'var(--ink-3)' }}>
+                    <IconClose style={{ width: 18, height: 18 }} />
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    onOpenJourney({
+                      id: selected.id, direction: selected.to.name,
+                      destinationCode: selected.to.code, trainCategory: selected.cat,
+                      trainId: selected.id, delayMinutes: selected.delayMin,
+                      actualTrack: '—', plannedTrack: '—', trackChanged: false,
+                      plannedDateTime: new Date().toISOString(),
+                      actualDateTime: new Date().toISOString(), cancelled: false,
+                    });
+                  }}
+                  style={{
+                    marginTop: 10, width: '100%', padding: '10px 12px',
+                    background: 'var(--primary)', color: '#FFFFFF',
+                    borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    fontSize: 13, fontWeight: 700,
+                  }}
+                >
+                  <span>View journey</span>
+                  <IconArrow style={{ width: 15, height: 15 }} />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="hairline" style={{ marginBottom: 16 }} />
-
-        {disruptions.map(d => (
-          <div key={d.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--line-2)', display: 'flex', gap: 12 }}>
-            <WeatherGlyph type={d.type} />
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 2 }}>
-                <div className="serif" style={{ fontSize: 15, lineHeight: 1.25 }}>{d.label}</div>
-                <div className="mono" style={{
-                  fontSize: 10.5, whiteSpace: 'nowrap', flexShrink: 0,
-                  color: d.severity > 0.5 ? 'var(--accent)' : d.severity > 0 ? 'var(--warn)' : 'var(--ok)',
-                }}>
-                  {d.impact}
-                </div>
+        {/* Disruption panel */}
+        <div className="pulse-side-panel" style={{ padding: '16px 18px' }}>
+          {disruptions.filter(d => d.severity > 0).map(d => (
+            <div key={d.id} style={{
+              background: 'var(--card)', borderRadius: 14, padding: 14, marginBottom: 10,
+              border: `1px solid ${d.severity > 0.3 ? 'var(--warn-border)' : 'var(--line)'}`,
+              borderLeft: d.severity > 0.3 ? '3px solid var(--warn)' : undefined,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{d.label}</div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-accent)', whiteSpace: 'nowrap' }}>{d.impact}</span>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>{d.message}</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.4 }}>{d.message}</div>
             </div>
-          </div>
-        ))}
-      </div>{/* /pulse-side-panel */}
-
-      </div>{/* /pulse-map-layout */}
+          ))}
+        </div>
+      </div>
 
       <div style={{ height: 80 }} />
     </div>
-  );
-}
-
-function NetStat({ big, label, borderLeft }: { big: string; label: string; borderLeft?: boolean }) {
-  return (
-    <div style={{ padding: '10px 14px', borderLeft: borderLeft ? '1px solid var(--line-2)' : 'none' }}>
-      <div className="serif num" style={{ fontSize: 26, lineHeight: 1, letterSpacing: '-0.02em' }}>{big}</div>
-      <div className="eyebrow" style={{ marginTop: 3 }}>{label}</div>
-    </div>
-  );
-}
-
-function WeatherGlyph({ type }: { type: 'storm' | 'fog' | 'sun' }) {
-  const labels: Record<string, string> = {
-    storm: 'Onweerswaarschuwing',
-    fog:   'Mist',
-    sun:   'Helder, geen verstoringen',
-  };
-  const common = { width: 28, height: 28, role: 'img' as const, 'aria-label': labels[type], style: { flexShrink: 0 } };
-  if (type === 'storm') return (
-    <svg {...common} viewBox="0 0 28 28" fill="none">
-      <path d="M7 15a5 5 0 115-8 6 6 0 0110 3 4 4 0 01-2 7H8a5 5 0 01-1-2z" stroke="var(--accent)" strokeWidth="1.3" />
-      <path d="M13 17l-2 4h3l-2 4" stroke="var(--accent)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-  if (type === 'fog') return (
-    <svg {...common} viewBox="0 0 28 28" fill="none">
-      <path d="M5 11h18M4 15h20M6 19h16M7 23h14" stroke="var(--warn)" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  );
-  return (
-    <svg {...common} viewBox="0 0 28 28" fill="none">
-      <circle cx="14" cy="14" r="5" stroke="var(--ok)" strokeWidth="1.3" />
-      <path d="M14 4v3M14 21v3M4 14h3M21 14h3M6.5 6.5l2 2M19.5 19.5l2 2M6.5 21.5l2-2M19.5 8.5l2-2" stroke="var(--ok)" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
   );
 }
