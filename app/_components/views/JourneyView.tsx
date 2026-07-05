@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { IDeparture, IStop, ITweaks } from '../../interfaces/interfaces';
 import { IconBack } from '../icons/Icons';
-import CrowdingStrip from '../shared/CrowdingStrip';
 import Loader from '../_partials/Loader';
 
 interface JourneyViewProps {
@@ -20,20 +19,18 @@ function quietestIdx(crowding: number[]): number {
   return idx;
 }
 
-export default function JourneyView({ train, fromCode, tweaks, onBack, onNavigate }: JourneyViewProps) {
+export default function JourneyView({ train, fromCode, onBack, onNavigate }: JourneyViewProps) {
   const [stops, setStops] = useState<IStop[] | null>(null);
   const [stopsFailed, setStopsFailed] = useState(false);
 
   const rawTrainId = train?.trainId;
-  const trainId =
-    rawTrainId != null && /^\d+$/.test(String(rawTrainId)) ? String(rawTrainId) : null;
+  const trainId = rawTrainId != null && /^\d+$/.test(String(rawTrainId)) ? String(rawTrainId) : null;
 
   useEffect(() => {
     if (!trainId) {
       queueMicrotask(() => { setStops(null); setStopsFailed(true); });
       return;
     }
-
     queueMicrotask(() => { setStops(null); setStopsFailed(false); });
 
     let active = true;
@@ -56,25 +53,21 @@ export default function JourneyView({ train, fromCode, tweaks, onBack, onNavigat
   if (!train) {
     return (
       <div className="view fade-up">
-        <div style={{ padding: '18px 20px 6px' }}>
-          <button onClick={onBack} style={{ padding: '6px 0', color: 'var(--ink-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <IconBack aria-hidden="true" style={{ width: 18, height: 18 }} />
-            <span className="eyebrow" style={{ color: 'var(--ink-2)' }}>Back</span>
+        <div style={{ padding: '18px 18px 6px' }}>
+          <button onClick={onBack} style={{
+            width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
+            border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <IconBack aria-hidden="true" style={{ width: 16, height: 16, color: 'var(--ink)' }} />
           </button>
         </div>
-        <div style={{ padding: '6px 20px' }}>
-          <h1 className="serif" style={{ fontSize: 32, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
-            Geen actieve reis
-          </h1>
+        <div style={{ padding: '16px 18px' }}>
+          <h1 style={{ fontSize: 19, fontWeight: 800 }}>Geen actieve reis</h1>
           <p style={{ marginTop: 10, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, maxWidth: 360 }}>
             Kies een trein in{' '}
-            <button onClick={() => onNavigate('rhythm')} style={{ color: 'var(--accent)', textDecoration: 'underline', padding: 0, fontSize: 13 }}>
-              Rhythm
-            </button>
+            <button onClick={() => onNavigate('rhythm')} style={{ color: 'var(--primary)', fontWeight: 700, padding: 0, fontSize: 13 }}>Home</button>
             {' '}of{' '}
-            <button onClick={() => onNavigate('search')} style={{ color: 'var(--accent)', textDecoration: 'underline', padding: 0, fontSize: 13 }}>
-              Zoeken
-            </button>
+            <button onClick={() => onNavigate('search')} style={{ color: 'var(--primary)', fontWeight: 700, padding: 0, fontSize: 13 }}>Stations</button>
             {' '}om hem hier te volgen.
           </p>
         </div>
@@ -83,73 +76,143 @@ export default function JourneyView({ train, fromCode, tweaks, onBack, onNavigat
   }
 
   const hereIdx = stops && fromCode ? stops.findIndex(s => s.code === fromCode) : -1;
-  const originName = stops ? (hereIdx >= 0 ? stops[hereIdx].name : stops[0].name) : null;
   const crowding = train.crowding;
-  const actual = new Date(train.actualDateTime);
+  const quietCar = crowding && crowding.length > 0 ? quietestIdx(crowding) : -1;
+  const crowdPct = crowding && crowding.length > 0 ? Math.round(crowding[quietCar] * 100) : null;
 
   return (
     <div className="view fade-up">
       {/* Header */}
-      <div style={{ padding: '18px 20px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onBack} style={{ padding: '6px 0', color: 'var(--ink-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <IconBack aria-hidden="true" style={{ width: 18, height: 18 }} />
-          <span className="eyebrow" style={{ color: 'var(--ink-2)' }}>Back</span>
+      <div style={{ padding: '18px 18px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={onBack} style={{
+          width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
+          border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <IconBack aria-hidden="true" style={{ width: 16, height: 16, color: 'var(--ink)' }} />
         </button>
-        <span className="now-pill"><span className="dot live" /> tracking</span>
-      </div>
 
-      {/* Big headline */}
-      <div style={{ padding: '6px 20px 20px' }}>
-        <div className="eyebrow" style={{ marginBottom: 6 }}>
-          {train.trainCategory}{train.trainId ? ` · TRAIN ${train.trainId}` : ''}
-        </div>
-        <h1 className="serif" style={{ fontSize: 36, lineHeight: 1.05, letterSpacing: '-0.02em' }}>
-          {originName && (
-            <>
-              <em style={{ fontStyle: 'italic' }}>{originName}</em>
-              <span style={{ color: 'var(--ink-3)' }}> → </span>
-            </>
-          )}
-          <em style={{ fontStyle: 'italic' }}>{train.direction}</em>
+        <span style={{ padding: '4px 10px', borderRadius: 999, background: 'var(--primary-tint)', color: 'var(--primary)', fontSize: 11, fontWeight: 700 }}>
+          {train.trainCategory} {train.trainId ?? ''}
+        </span>
+        <span className="dot live" style={{ marginLeft: -4 }} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ok)' }}>live</span>
+
+        <h1 style={{ flex: 1, fontSize: 19, fontWeight: 800, letterSpacing: '-0.02em' }}>
+          to {train.direction}
         </h1>
-        <div style={{ marginTop: 10, display: 'flex', gap: 14, alignItems: 'baseline' }}>
-          <div className="serif num" style={{ fontSize: 28, letterSpacing: '-0.02em' }}>
-            {actual.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+
+        {/* Track box */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            border: '1.5px solid var(--line)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 800,
+          }}>
+            {train.actualTrack}
           </div>
-          <div className="mono" style={{ fontSize: 12, color: train.delayMinutes > 0 ? 'var(--accent)' : 'var(--ok-text)' }}>
-            {train.delayMinutes > 0 ? `+${train.delayMinutes} min` : 'on time'}
-          </div>
-          <div className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-            TRACK {train.actualTrack}
-          </div>
+          <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--ink-3)', marginTop: 2 }}>TRACK</span>
         </div>
       </div>
 
-      {/* Platform choreography — only when real crowding data exists */}
+      {/* Where to stand */}
       {crowding && crowding.length > 0 && (
-        <PlatformCard crowding={crowding} train={train} tweaks={tweaks} />
+        <div style={{ padding: '0 18px 12px' }}>
+          <div className="card" style={{ padding: 16, borderRadius: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <span className="eyebrow">WHERE TO STAND</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: crowdPct! < 40 ? 'var(--ok)' : crowdPct! < 75 ? 'var(--warn-accent)' : 'var(--bad)' }}>
+                Car {quietCar + 1} · {crowdPct}% full
+              </span>
+            </div>
+
+            {/* Train diagram */}
+            <div style={{ display: 'flex', gap: 3 }}>
+              {crowding.map((c, i) => {
+                const isRec = i === quietCar;
+                const isEnd = i === 0 || i === crowding.length - 1;
+                return (
+                  <div key={i} style={{
+                    flex: 1, height: 34, position: 'relative',
+                    borderRadius: isEnd ? (i === 0 ? '8px 4px 4px 8px' : '4px 8px 8px 4px') : 4,
+                    background: isRec ? 'var(--ok-tint)' : '#CBD7E8',
+                    border: isRec ? '2px solid var(--ok)' : '1px solid var(--line)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}>
+                    {/* Crowd fill bar */}
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      height: `${Math.max(10, c * 100)}%`,
+                      background: isRec ? 'var(--ok-light)' : c >= 0.75 ? 'var(--warn-accent)' : 'var(--ink-4)',
+                      borderRadius: 'inherit',
+                    }} />
+                    <span style={{ position: 'relative', fontSize: 11, fontWeight: 800, color: 'var(--ink)' }}>{i + 1}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Platform zones */}
+            <div style={{ display: 'flex', marginTop: 10, gap: 0 }}>
+              {['A', 'B', 'C', 'D'].map((zone, zi) => {
+                const isRec = quietCar >= (crowding.length / 4) * zi && quietCar < (crowding.length / 4) * (zi + 1);
+                return (
+                  <div key={zone} style={{
+                    flex: 1, textAlign: 'center', paddingTop: 6,
+                    borderTop: `2px solid ${isRec ? 'var(--ok)' : 'var(--line)'}`,
+                  }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: isRec ? 'var(--ok)' : 'var(--ink-3)' }}>
+                      Zone {zone}{isRec ? ' · here' : ''}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Timeline */}
-      <div style={{ padding: '24px 20px 0' }}>
-        <h2 className="eyebrow" style={{ marginBottom: 12 }}>
-          Journey timeline{stops ? ` · ${stops.length} stops` : ''}
-        </h2>
-        {stops ? (
-          <ol style={{ position: 'relative', listStyle: 'none', padding: 0, margin: 0 }}>
-            {stops.map((s, i) => (
-              <li key={`${s.code}-${i}`}>
-                <StopRow stop={s} here={i === hereIdx} last={i === stops.length - 1} />
-              </li>
-            ))}
-          </ol>
-        ) : stopsFailed ? (
-          <div className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>
-            Stops unavailable
+      {/* Stops */}
+      <div style={{ padding: '0 18px' }}>
+        <div className="card" style={{ padding: 16, borderRadius: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <span className="eyebrow">STOPS</span>
+            {train.delayMinutes > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-accent)' }}>running +{train.delayMinutes} min</span>
+            )}
           </div>
-        ) : (
-          <Loader />
-        )}
+
+          {stops ? (
+            <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {stops.map((s, i) => (
+                <li key={`${s.code}-${i}`}>
+                  <StopRow stop={s} here={i === hereIdx} last={i === stops.length - 1} isPast={i <= hereIdx} />
+                </li>
+              ))}
+            </ol>
+          ) : stopsFailed ? (
+            <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>Stops unavailable</div>
+          ) : (
+            <Loader />
+          )}
+        </div>
+      </div>
+
+      {/* Footer actions */}
+      <div style={{ padding: '16px 18px', display: 'flex', gap: 10 }}>
+        <button style={{
+          flex: 1, padding: 14, borderRadius: 13, fontSize: 14, fontWeight: 700,
+          background: 'var(--primary)', color: '#FFFFFF', textAlign: 'center',
+        }}>
+          Set arrival alert
+        </button>
+        <button style={{
+          flex: 1, padding: 14, borderRadius: 13, fontSize: 14, fontWeight: 700,
+          background: 'var(--card)', color: 'var(--ink)', border: '1px solid var(--line)', textAlign: 'center',
+        }}>
+          Share ETA
+        </button>
       </div>
 
       <div style={{ height: 80 }} />
@@ -157,122 +220,44 @@ export default function JourneyView({ train, fromCode, tweaks, onBack, onNavigat
   );
 }
 
-function PlatformCard({ crowding, train, tweaks }: {
-  crowding: number[];
-  train: IDeparture;
-  tweaks: ITweaks;
-}) {
-  const quietest = quietestIdx(crowding);
-  return (
-    <div style={{ padding: '0 20px 4px' }}>
-      <h2 className="eyebrow" style={{ marginBottom: 10 }}>Platform choreography</h2>
-      <div className="card" style={{ padding: 16 }}>
-        <div className="serif" style={{ fontSize: 18, lineHeight: 1.3 }}>
-          Stand at the <em>{quietest < crowding.length / 2 ? 'front' : 'back'}</em> of Track {train.actualTrack}.
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 4, lineHeight: 1.45 }}>
-          Car <strong>{quietest + 1}</strong> is quietest right now. It&apos;ll stop near the{' '}
-          <strong>{quietest < crowding.length / 2 ? 'north' : 'south'}</strong> end of the platform.
-        </div>
-
-        <div aria-hidden="true" style={{ marginTop: 16 }}>
-          <PlatformDiagram
-            crowding={crowding}
-            highlight={quietest}
-            quietCar={train.quietCarriage ?? null}
-            firstClass={train.firstClassCars ?? []}
-          />
-        </div>
-
-        {tweaks.verbosity === 'rich' && (
-          <div style={{ marginTop: 14 }}>
-            <CrowdingStrip crowding={crowding} variant="journey" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function PlatformDiagram({ crowding, highlight, quietCar, firstClass }: {
-  crowding: number[];
-  highlight: number;
-  quietCar: number | null;
-  firstClass: number[];
-}) {
-  return (
-    <div>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {crowding.map((_, i) => {
-          const isFirst = firstClass.includes(i);
-          const isQuiet = quietCar === i;
-          const isHi = highlight === i;
-          return (
-            <div key={i} style={{
-              flex: 1, height: 44, borderRadius: 5,
-              background: isHi ? 'var(--ink)' : 'var(--bg-3)',
-              color: isHi ? 'var(--bg)' : 'var(--ink-2)',
-              border: `1px solid ${isHi ? 'var(--ink)' : 'var(--line)'}`,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              position: 'relative', fontSize: 10,
-            }}>
-              <span className="mono" style={{ fontSize: 10, fontWeight: 600 }}>{i + 1}</span>
-              {isFirst && <span className="mono" style={{ fontSize: 8, opacity: 0.6 }}>1ST</span>}
-              {isQuiet && !isFirst && <span className="mono" style={{ fontSize: 8, opacity: 0.6 }}>QUIET</span>}
-              {isHi && (
-                <div style={{ position: 'absolute', top: -8, left: '50%', transform: 'translateX(-50%)', fontSize: 12 }}>↓</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
-        <span className="mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>← FRONT · North end</span>
-        <span className="mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>South end · BACK →</span>
-      </div>
-    </div>
-  );
-}
-
-function StopRow({ stop, here, last }: { stop: IStop; here: boolean; last: boolean }) {
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+function StopRow({ stop, here, last, isPast }: { stop: IStop; here: boolean; last: boolean; isPast: boolean }) {
+  const fmt = (iso: string) => new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
   const delayed = new Date(stop.actualTime).getTime() !== new Date(stop.plannedTime).getTime();
-  const destination = stop.status === 'DESTINATION';
+  const delayMs = new Date(stop.actualTime).getTime() - new Date(stop.plannedTime).getTime();
+  const delayMin = Math.round(delayMs / 60000);
 
   return (
-    <div style={{ display: 'flex', gap: 16, position: 'relative' }}>
-      <div style={{ width: 60, textAlign: 'right', paddingTop: 8 }}>
-        <div className="mono num" style={{ fontSize: 13, fontWeight: 500 }}>{fmt(stop.actualTime)}</div>
-        {delayed && (
-          <div className="mono num" style={{ fontSize: 10.5, color: 'var(--ink-3)', textDecoration: 'line-through' }}>{fmt(stop.plannedTime)}</div>
+    <div style={{ display: 'flex', gap: 14, position: 'relative', minHeight: 48 }}>
+      {/* Timeline */}
+      <div style={{ position: 'relative', width: 20, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        {!last && (
+          <div style={{
+            position: 'absolute', left: '50%', top: 16, bottom: 0, width: 2, marginLeft: -1,
+            background: isPast || here ? 'var(--primary)' : 'var(--line)',
+          }} />
         )}
-      </div>
-
-      <div style={{ position: 'relative', width: 18, flexShrink: 0 }}>
-        <div style={{ position: 'absolute', left: 8, top: 0, bottom: last ? '50%' : 0, width: 1.5, background: 'var(--line)' }} />
         <div style={{
-          position: 'absolute', left: 4, top: 10,
-          width: 10, height: 10, borderRadius: '50%',
-          background: here ? 'var(--accent)' : 'var(--bg)',
-          border: `1.5px solid ${here || destination ? 'var(--ink)' : 'var(--ink-3)'}`,
-          boxShadow: here ? '0 0 0 4px var(--accent-dim)' : 'none',
+          position: 'relative', marginTop: 6,
+          width: here ? 14 : 10, height: here ? 14 : 10, borderRadius: '50%',
+          background: here || isPast ? 'var(--primary)' : 'var(--card)',
+          border: here ? 'none' : `2px solid ${isPast ? 'var(--primary)' : 'var(--line)'}`,
+          boxShadow: here ? '0 0 0 4px var(--primary-tint)' : 'none',
         }} />
       </div>
 
-      <div style={{ flex: 1, padding: '6px 0 18px' }}>
-        <div className="serif" style={{
-          fontSize: here || destination ? 18 : 16,
-          lineHeight: 1.2,
-          fontStyle: here ? 'italic' : 'normal',
-          color: here ? 'var(--accent)' : 'var(--ink)',
-        }}>
-          {stop.name}
+      {/* Content */}
+      <div style={{ flex: 1, paddingBottom: last ? 0 : 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <span style={{ fontSize: 14, fontWeight: here ? 800 : 700, color: 'var(--ink)' }}>{stop.name}</span>
+          <span className="num" style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>{fmt(stop.actualTime)}</span>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
-          <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>{stop.code}</span>
-          {stop.track && (
-            <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>· TRACK {stop.track}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+          <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>
+            {stop.status === 'ORIGIN' ? 'Departure' : stop.status === 'DESTINATION' ? 'Arrival' : `Track ${stop.track}`}
+            {stop.track && stop.status !== 'DESTINATION' ? ` · track ${stop.track}` : ''}
+          </span>
+          {delayed && delayMin > 0 && (
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-accent)' }}>+{delayMin}</span>
           )}
         </div>
       </div>
