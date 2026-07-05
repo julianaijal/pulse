@@ -11,10 +11,10 @@ interface TabBarProps {
 }
 
 const TABS: { id: Tab; label: string; Icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }[] = [
-  { id: 'rhythm',  label: 'Rhythm',  Icon: IconRhythm  },
-  { id: 'pulse',   label: 'Pulse',   Icon: IconPulse   },
-  { id: 'journey', label: 'Journey', Icon: IconJourney },
-  { id: 'search',  label: 'Search',  Icon: IconSearch  },
+  { id: 'rhythm',  label: 'Home',     Icon: IconRhythm  },
+  { id: 'pulse',   label: 'Network',  Icon: IconPulse   },
+  { id: 'journey', label: 'Journeys', Icon: IconJourney },
+  { id: 'search',  label: 'Stations', Icon: IconSearch  },
 ];
 
 export default function TabBar({ tab, onTabChange }: TabBarProps) {
