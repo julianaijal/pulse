@@ -53,7 +53,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
     return (
       <div className="view fade-up">
         <div style={{ padding: '18px 18px 6px' }}>
-          <button onClick={onBack} style={{
+          <button onClick={onBack} aria-label="Back" style={{
             width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
             border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
@@ -83,7 +83,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
     <div className="view fade-up">
       {/* Header */}
       <div style={{ padding: '18px 18px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={onBack} style={{
+        <button onClick={onBack} aria-label="Back" style={{
           width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
           border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
