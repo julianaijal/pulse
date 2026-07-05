@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { IDeparture, ITweaks } from '../../interfaces/interfaces';
 import { generateDepartures, STATIONS } from '../../_utils/mock';
-import { IconBack, IconSearch } from '../icons/Icons';
+import { IconBack, IconClose, IconSearch } from '../icons/Icons';
 import FullDepartureRow from '../shared/FullDepartureRow';
 import NowPill from '../shared/NowPill';
 
@@ -24,7 +24,6 @@ interface StationViewProps {
 export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: (s: StationObj) => void }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState<StationObj[]>(STATIONS.slice(0, 8));
-  const [focused, setFocused] = useState(false);
 
   useEffect(() => {
     if (q.length < 1) {
@@ -61,11 +60,8 @@ export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: 
           <label htmlFor="station-search" className="sr-only">Search stations</label>
           <input
             id="station-search"
-            autoFocus
             value={q}
             onChange={e => setQ(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
             placeholder="Search stations..."
             style={{
               flex: 1, background: 'transparent', border: 0,
@@ -73,9 +69,12 @@ export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: 
               outline: 'none',
             }}
           />
-          {(q || focused) && (
-            <button onClick={() => setQ('')} style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>
-              Cancel
+          {q && (
+            <button onClick={() => setQ('')} aria-label="Clear search" style={{
+              width: 24, height: 24, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'var(--subtle)', flexShrink: 0,
+            }}>
+              <IconClose aria-hidden="true" style={{ width: 12, height: 12, color: 'var(--ink-3)' }} />
             </button>
           )}
         </div>
@@ -106,6 +105,8 @@ export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: 
           }}
           onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          onFocus={e => (e.currentTarget.style.background = 'var(--subtle)')}
+          onBlur={e => (e.currentTarget.style.background = 'transparent')}
           >
             <span style={{ fontSize: 15, fontWeight: 700 }}>{s.name}</span>
             <span style={{ fontSize: 11, color: 'var(--ink-3)', fontWeight: 600 }}>{s.code}</span>
@@ -198,7 +199,7 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
           {departures ? departures.map(d => (
             <FullDepartureRow key={d.id} d={d} onOpen={() => onOpenJourney(d, station.code)} />
           )) : (
-            <div aria-busy="true" aria-label="Loading departures…">
+            <div role="status" aria-busy="true" aria-label="Loading departures…">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} style={{ padding: '14px 0', borderBottom: '1px solid var(--line-row)' }}>
                   <div className="skeleton" style={{ height: 18, width: 50, marginBottom: 6 }} />

@@ -23,6 +23,8 @@ export default function DepartureRow({ d, onClick }: DepartureRowProps) {
       }}
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      onFocus={e => (e.currentTarget.style.background = 'var(--subtle)')}
+      onBlur={e => (e.currentTarget.style.background = 'transparent')}
     >
       {/* Time */}
       <div className="num" style={{
