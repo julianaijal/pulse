@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { IDeparture, IStop } from '../../interfaces/interfaces';
 import { useJourney } from '../../_hooks/useJourney';
+import { formatTime, quietestCar } from '../../_utils/format';
 import { IconBack } from '../icons/Icons';
 import Loader from '../_partials/Loader';
 
@@ -11,12 +12,6 @@ interface JourneyViewProps {
   fromCode?: string;
   onBack: () => void;
   onNavigate: (tab: 'rhythm' | 'search') => void;
-}
-
-function quietestIdx(crowding: number[]): number {
-  let min = 1, idx = 0;
-  crowding.forEach((c, i) => { if (c < min) { min = c; idx = i; } });
-  return idx;
 }
 
 export default function JourneyView({ train, fromCode, onBack, onNavigate }: JourneyViewProps) {
@@ -55,7 +50,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
   const shareEta = async () => {
     const arrival = stops && stops.length > 0 ? stops[stops.length - 1] : null;
     const etaStr = arrival
-      ? new Date(arrival.actualTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      ? formatTime(arrival.actualTime)
       : null;
     const text = arrival && etaStr
       ? `I'm on the ${train.trainCategory} to ${train.direction}, arriving at ${arrival.name} around ${etaStr}.`
@@ -76,7 +71,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
   const hereIdx = stops && fromCode ? stops.findIndex(s => s.code === fromCode) : -1;
   const crowding = train.crowding;
   const hasCrowding = !!crowding && crowding.length > 0;
-  const quietCar = hasCrowding ? quietestIdx(crowding) : -1;
+  const quietCar = hasCrowding ? quietestCar(crowding) : -1;
   const crowdPct = hasCrowding ? Math.round(crowding[quietCar] * 100) : null;
   // Real NS forecast for the boarding stop (falls back to the origin)
   const forecast = stops?.[hereIdx >= 0 ? hereIdx : 0]?.crowdForecast;
@@ -241,7 +236,6 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
 }
 
 function StopRow({ stop, here, last, isPast }: { stop: IStop; here: boolean; last: boolean; isPast: boolean }) {
-  const fmt = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const delayed = new Date(stop.actualTime).getTime() !== new Date(stop.plannedTime).getTime();
   const delayMs = new Date(stop.actualTime).getTime() - new Date(stop.plannedTime).getTime();
   const delayMin = Math.round(delayMs / 60000);
@@ -269,7 +263,7 @@ function StopRow({ stop, here, last, isPast }: { stop: IStop; here: boolean; las
       <div style={{ flex: 1, paddingBottom: last ? 0 : 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span style={{ fontSize: 14, fontWeight: here ? 800 : 700, color: 'var(--ink)' }}>{stop.name}</span>
-          <span className="num" style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>{fmt(stop.actualTime)}</span>
+          <span className="num" style={{ fontSize: 14, fontWeight: 800, color: 'var(--ink)' }}>{formatTime(stop.actualTime)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
           <span style={{ fontSize: 12, color: 'var(--ink-3)' }}>

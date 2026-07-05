@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { IDeparture } from '../../interfaces/interfaces';
 import { STATIONS } from '../../_utils/mock';
 import { useDepartures } from '../../_hooks/useDepartures';
+import { formatTime } from '../../_utils/format';
 import { IconBack, IconClose, IconSearch } from '../icons/Icons';
 import FullDepartureRow from '../shared/FullDepartureRow';
 import NowPill from '../shared/NowPill';
@@ -123,8 +124,7 @@ export default function StationView({ station, onBack, onOpenJourney }: StationV
 
   if (!station) return null;
 
-  const now = new Date();
-  const updatedStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const updatedStr = formatTime(new Date());
 
   return (
     <div className="view fade-up">
