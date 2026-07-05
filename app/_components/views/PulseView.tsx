@@ -57,7 +57,10 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
   }, []);
 
   useEffect(() => {
-    lastTsRef.current = performance.now();
+    // Continuously moving trains violate WCAG 2.2.2 (no pause) and are
+    // untappable moving targets; freeze positions under reduced motion.
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+
     const loop = (ts: number) => {
       const dt = ts - lastTsRef.current;
       lastTsRef.current = ts;
@@ -68,8 +71,20 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
       }));
       rafRef.current = requestAnimationFrame(loop);
     };
-    rafRef.current = requestAnimationFrame(loop);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+
+    const start = () => {
+      if (rafRef.current != null) return;
+      lastTsRef.current = performance.now();
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      if (rafRef.current != null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    };
+
+    const sync = () => { if (mq.matches) stop(); else start(); };
+    sync();
+    mq.addEventListener('change', sync);
+    return () => { mq.removeEventListener('change', sync); stop(); };
   }, []);
 
   const filteredTrains = trains.filter(tr => {
@@ -83,7 +98,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
 
   return (
     <div className="view fade-up" style={{ paddingBottom: 0 }}>
-      <div aria-live="assertive" aria-atomic="true" className="sr-only">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
         {activeDisruptions.map(d => d.label).join(', ')}
       </div>
       <div aria-live="polite" aria-atomic="true" className="sr-only">
@@ -99,7 +114,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
       {/* Filter chips */}
       <div style={{ padding: '0 18px 12px', display: 'flex', gap: 8, overflowX: 'auto' }}>
         {([['all','All'],['ic','Intercity'],['spr','Sprinter'],['delayed','Delayed']] as [Filter,string][]).map(([id, label]) => (
-          <button key={id} onClick={() => setFilter(id)} style={{
+          <button key={id} onClick={() => setFilter(id)} aria-pressed={filter === id} style={{
             padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
             background: filter === id ? (id === 'delayed' ? 'transparent' : 'var(--ink)') : 'var(--card)',
             color: filter === id ? (id === 'delayed' ? 'var(--warn-accent)' : '#FFFFFF') : (id === 'delayed' ? 'var(--warn-accent)' : 'var(--ink-2)'),
@@ -149,7 +164,9 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                     onClick={() => s && onOpenStation(s)}
                     onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && s) { e.preventDefault(); onOpenStation(s); } }}
                   >
-                    <circle cx={x} cy={y} r={3.5} fill="var(--ink)" />
+                    {/* Enlarged invisible hit area (WCAG 2.5.8) */}
+                    <circle cx={x} cy={y} r={12} fill="transparent" />
+                    <circle cx={x} cy={y} r={3.5} fill="var(--ink)" style={{ pointerEvents: 'none' }} />
                     {MAJOR_LABELS[code] && (
                       <text x={x + 8} y={y + 4} fontSize="10" fontWeight="700" fill="var(--ink)" style={{ pointerEvents: 'none' }}>
                         {MAJOR_LABELS[code]}
@@ -176,9 +193,11 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                     onClick={() => setSelected(tr)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(tr); } }}
                   >
+                    {/* Enlarged invisible hit area (WCAG 2.5.8) */}
+                    <circle cx={x} cy={y} r={12} fill="transparent" />
                     <circle cx={x} cy={y} r={4.5}
                       fill={isDelayed ? 'var(--warn)' : 'var(--primary)'}
-                      stroke="#FFFFFF" strokeWidth="1.5" />
+                      stroke="#FFFFFF" strokeWidth="1.5" style={{ pointerEvents: 'none' }} />
                     {isSel && <circle cx={x} cy={y} r={10} fill="none" stroke={isDelayed ? 'var(--warn)' : 'var(--primary)'} strokeWidth="1.5" />}
                   </g>
                 );
