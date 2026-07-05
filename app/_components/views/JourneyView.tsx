@@ -116,7 +116,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
           {train.trainCategory} {train.trainId ?? ''}
         </span>
         <span className="dot live" style={{ marginLeft: -4 }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ok)' }}>live</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--ok-text)' }}>live</span>
 
         <h1 style={{ flex: 1, fontSize: 19, fontWeight: 800, letterSpacing: '-0.02em' }}>
           to {train.direction}
@@ -142,7 +142,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
           <div className="card" style={{ padding: 16, borderRadius: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span className="eyebrow">WHERE TO STAND</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: crowdPct! < 40 ? 'var(--ok)' : crowdPct! < 75 ? 'var(--warn-accent)' : 'var(--bad)' }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: crowdPct! < 40 ? 'var(--ok-text)' : crowdPct! < 75 ? 'var(--warn-text)' : 'var(--bad)' }}>
                 Car {quietCar + 1} · {crowdPct}% full
               </span>
             </div>
@@ -183,7 +183,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
                     flex: 1, textAlign: 'center', paddingTop: 6,
                     borderTop: `2px solid ${isRec ? 'var(--ok)' : 'var(--line)'}`,
                   }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: isRec ? 'var(--ok)' : 'var(--ink-3)' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: isRec ? 'var(--ok-text)' : 'var(--ink-3)' }}>
                       Zone {zone}{isRec ? ' · here' : ''}
                     </span>
                   </div>
@@ -200,7 +200,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <span className="eyebrow">STOPS</span>
             {train.delayMinutes > 0 && (
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-accent)' }}>running +{train.delayMinutes} min</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-text)' }}>running +{train.delayMinutes} min</span>
             )}
           </div>
 
@@ -273,7 +273,7 @@ function StopRow({ stop, here, last, isPast }: { stop: IStop; here: boolean; las
             {stop.track && stop.status !== 'DESTINATION' ? ` · track ${stop.track}` : ''}
           </span>
           {delayed && delayMin > 0 && (
-            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-accent)' }}>+{delayMin}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-text)' }}>+{delayMin}</span>
           )}
         </div>
       </div>

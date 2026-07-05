@@ -22,10 +22,11 @@
   --ok-light:      #2FCB82;
   --ok-tint:       #D9F3E6;
   --ok-ring:       #7FE0AE;
+  --ok-text:       #0B7A46; /* green for small text: >=4.5:1 on white and --ok-tint */
 
   --warn:          #FFB300;
   --warn-accent:   #E88A00;
-  --warn-text:     #B26A00;
+  --warn-text:     #8F5400; /* amber for small text: >=4.5:1 on white and --warn-tint */
   --warn-dark:     #3A2A00;
   --warn-tint:     #FFF6E5;
   --warn-border:   #F5DBA6;
@@ -268,7 +269,7 @@ h1, h2, h3, h4, h5, h6 { font: inherit; }
 .tabbar button {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 10px 4px 0;
-  color: var(--ink-4);
+  color: var(--ink-3);
   font-size: 0.59375rem; /* 9.5/16 */ letter-spacing: 0; text-transform: none; font-weight: 600;
   transition: color 0.15s;
 }
@@ -397,7 +398,7 @@ h1, h2, h3, h4, h5, h6 { font: inherit; }
   background: var(--primary-tint); color: var(--primary);
   border: 1px solid transparent;
 }
-.chip.ok   { background: var(--ok-tint); color: var(--ok); }
+.chip.ok   { background: var(--ok-tint); color: var(--ok-text); }
 .chip.warn { background: var(--warn-tint); color: var(--warn-text); }
 .chip.bad  { background: var(--bad-tint); color: var(--bad); }
 

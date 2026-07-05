@@ -117,7 +117,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
           <button key={id} onClick={() => setFilter(id)} aria-pressed={filter === id} style={{
             padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
             background: filter === id ? (id === 'delayed' ? 'transparent' : 'var(--ink)') : 'var(--card)',
-            color: filter === id ? (id === 'delayed' ? 'var(--warn-accent)' : '#FFFFFF') : (id === 'delayed' ? 'var(--warn-accent)' : 'var(--ink-2)'),
+            color: filter === id ? (id === 'delayed' ? 'var(--warn-text)' : '#FFFFFF') : (id === 'delayed' ? 'var(--warn-text)' : 'var(--ink-2)'),
             border: `1px solid ${filter === id && id !== 'delayed' ? 'var(--ink)' : id === 'delayed' ? 'var(--warn-border)' : 'var(--line)'}`,
           }}>
             {label}
@@ -271,7 +271,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{d.label}</div>
-                <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-accent)', whiteSpace: 'nowrap' }}>{d.impact}</span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--warn-text)', whiteSpace: 'nowrap' }}>{d.impact}</span>
               </div>
               <div style={{ fontSize: 12, color: 'var(--ink-3)', lineHeight: 1.4 }}>{d.message}</div>
             </div>
