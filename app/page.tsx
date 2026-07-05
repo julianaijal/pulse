@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { IDeparture, ITweaks, CommuteStation } from './interfaces/interfaces';
-import { ACCENT_MAP } from './_components/TweaksPanel';
 import TabBar from './_components/TabBar';
 import TweaksPanel from './_components/TweaksPanel';
 import RhythmView from './_components/views/RhythmView';
@@ -22,28 +21,24 @@ interface StationObj {
   lng?: number;
 }
 
+const DEMO_BASELINE = { usualDuration: 27, onTimeRate: 0.89 };
+
 const TWEAK_DEFAULTS: ITweaks = {
-  theme: 'light',
   verbosity: 'rich',
-  crowdingStyle: 'bars',
-  accent: 'orange',
 };
 
 function loadTweaks(): ITweaks {
   if (typeof window === 'undefined') return TWEAK_DEFAULTS;
   return {
-    theme:        (localStorage.getItem('pulse.theme')        as ITweaks['theme'])        ?? TWEAK_DEFAULTS.theme,
-    verbosity:    (localStorage.getItem('pulse.verbosity')    as ITweaks['verbosity'])    ?? TWEAK_DEFAULTS.verbosity,
-    crowdingStyle:(localStorage.getItem('pulse.crowdingStyle')as ITweaks['crowdingStyle'])?? TWEAK_DEFAULTS.crowdingStyle,
-    accent:       (localStorage.getItem('pulse.accent')       as ITweaks['accent'])       ?? TWEAK_DEFAULTS.accent,
+    verbosity: (localStorage.getItem('pulse.verbosity') as ITweaks['verbosity']) ?? TWEAK_DEFAULTS.verbosity,
   };
 }
 
 const NAV_ITEMS = [
-  { id: 'rhythm',  label: 'Rhythm',  Icon: IconRhythm  },
-  { id: 'pulse',   label: 'Pulse',   Icon: IconPulse   },
-  { id: 'journey', label: 'Journey', Icon: IconJourney },
-  { id: 'search',  label: 'Search',  Icon: IconSearch  },
+  { id: 'rhythm',  label: 'Home',     Icon: IconRhythm  },
+  { id: 'pulse',   label: 'Network',  Icon: IconPulse   },
+  { id: 'journey', label: 'Journeys', Icon: IconJourney },
+  { id: 'search',  label: 'Stations', Icon: IconSearch  },
 ] as const;
 
 export default function Home() {
@@ -75,14 +70,9 @@ export default function Home() {
 
   useEffect(() => { localStorage.setItem('pulse.tab', tab); }, [tab]);
 
-  useEffect(() => {
-    document.documentElement.dataset.theme = tweaks.theme;
-    document.documentElement.style.setProperty('--accent', ACCENT_MAP[tweaks.accent] ?? ACCENT_MAP.orange);
-  }, [tweaks.theme, tweaks.accent]);
-
   const updateTweak = (key: keyof ITweaks, value: string) => {
-    setTweaks(t => ({ ...t, [key]: value }));
-    localStorage.setItem(`pulse.${key}`, value);
+    setTweaks(t => ({ ...t, [key]: value } as ITweaks));
+    if (key === 'verbosity') localStorage.setItem('pulse.verbosity', value);
   };
 
   const setCommuteStation = (key: 'home' | 'work', station: CommuteStation) => {
@@ -114,10 +104,20 @@ export default function Home() {
       {/* ── Desktop sidebar ─────────────────────────────── */}
       <aside className="pulse-sidebar">
         {/* Logo */}
-        <div className="pulse-sidebar-logo">
-          <span className="serif" style={{ fontSize: 22, lineHeight: 1, letterSpacing: '-0.02em' }}>
-            Pulse<em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>.</em>
-          </span>
+        <div className="pulse-sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: 'var(--primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="20" height="20" viewBox="0 0 16 20" fill="none">
+              <path d="M2 10h3l2-5 3 10 2.5-7 1.5 2h4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.1, color: 'var(--ink)' }}>Pulse</div>
+            <div style={{ fontSize: 10.5, color: 'var(--ink-3)', lineHeight: 1.2 }}>Dutch rail companion</div>
+          </div>
         </div>
 
         {/* Nav */}
@@ -138,6 +138,21 @@ export default function Home() {
 
         {/* Spacer */}
         <div style={{ flex: 1 }} />
+
+        {/* Commute card */}
+        <div style={{
+          background: 'var(--subtle)', borderRadius: 12, padding: '12px 14px', marginBottom: 12,
+        }}>
+          <div className="eyebrow" style={{ marginBottom: 6, fontSize: 10 }}>MY COMMUTE</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>{commute.home?.name ? commute.home.name.replace(' Centraal', ' C').replace('Amsterdam', 'Amsterdam') : 'Home'}</span>
+            <span style={{ color: 'var(--primary)' }}>→</span>
+            <span>{commute.work?.name ? commute.work.name.replace(' Centraal', ' C') : 'Work'}</span>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 4 }}>
+            {DEMO_BASELINE.usualDuration} min avg · {(DEMO_BASELINE.onTimeRate * 100).toFixed(0)}% on time
+          </div>
+        </div>
 
         {/* Tweaks */}
         <button

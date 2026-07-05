@@ -5,14 +5,6 @@ import { ITweaks, CommuteStation } from '../interfaces/interfaces';
 import { IconClose } from './icons/Icons';
 import StationPicker from './shared/StationPicker';
 
-// NOTE: values are mirrored in the inline theme script in app/layout.tsx — keep in sync.
-const ACCENT_MAP: Record<string, string> = {
-  orange: 'oklch(0.60 0.17 45)',
-  cobalt: 'oklch(0.55 0.19 265)',
-  sage:   'oklch(0.58 0.13 155)',
-  plum:   'oklch(0.48 0.18 330)',
-};
-
 interface TweaksPanelProps {
   tweaks: ITweaks;
   onChange: (key: keyof ITweaks, value: string) => void;
@@ -118,15 +110,6 @@ export default function TweaksPanel({ tweaks, onChange, commute, onCommuteChange
 
       <div className="hairline" style={{ margin: '2px 0 14px' }} />
 
-      <TweakRow label="Theme">
-        <Segmented
-          label="Theme"
-          value={tweaks.theme}
-          onChange={v => onChange('theme', v)}
-          options={[['light', 'Light'], ['dark', 'Dark']]}
-        />
-      </TweakRow>
-
       <TweakRow label="Verbosity">
         <Segmented
           label="Verbosity"
@@ -135,24 +118,9 @@ export default function TweaksPanel({ tweaks, onChange, commute, onCommuteChange
           options={[['minimal', 'Minimal'], ['rich', 'Data-rich']]}
         />
       </TweakRow>
-
-      <TweakRow label="Crowding display">
-        <Segmented
-          label="Crowding display"
-          value={tweaks.crowdingStyle}
-          onChange={v => onChange('crowdingStyle', v)}
-          options={[['bars', 'Bars'], ['dots', 'Dots'], ['heatmap', 'Heat']]}
-        />
-      </TweakRow>
-
-      <TweakRow label="Accent">
-        <AccentSwatches tweaks={tweaks} onChange={onChange} />
-      </TweakRow>
     </div>
   );
 }
-
-export { ACCENT_MAP };
 
 function TweakRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -207,48 +175,6 @@ function Segmented({ value, onChange, options, label }: {
             transition: 'all 0.15s',
           }}
         >{optionLabel}</button>
-      ))}
-    </div>
-  );
-}
-
-function AccentSwatches({ tweaks, onChange }: { tweaks: ITweaks; onChange: (key: keyof ITweaks, value: string) => void }) {
-  const groupRef = useRef<HTMLDivElement>(null);
-  const accentKeys = Object.keys(ACCENT_MAP);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    e.preventDefault();
-    const idx = accentKeys.indexOf(tweaks.accent);
-    const next = e.key === 'ArrowRight'
-      ? (idx + 1) % accentKeys.length
-      : (idx - 1 + accentKeys.length) % accentKeys.length;
-    onChange('accent', accentKeys[next]);
-    const buttons = groupRef.current?.querySelectorAll<HTMLElement>('button');
-    buttons?.[next]?.focus();
-  };
-
-  return (
-    <div
-      ref={groupRef}
-      role="radiogroup"
-      aria-label="Accent colour"
-      onKeyDown={handleKeyDown}
-      style={{ display: 'flex', gap: 8 }}
-    >
-      {Object.entries(ACCENT_MAP).map(([k, c]) => (
-        <button
-          key={k}
-          role="radio"
-          aria-checked={tweaks.accent === k}
-          aria-label={k.charAt(0).toUpperCase() + k.slice(1)}
-          tabIndex={tweaks.accent === k ? 0 : -1}
-          onClick={() => onChange('accent', k)}
-          style={{
-            width: 26, height: 26, borderRadius: 100, background: c,
-            outline: tweaks.accent === k ? '2px solid var(--ink)' : 'none', outlineOffset: 2,
-          }}
-        />
       ))}
     </div>
   );

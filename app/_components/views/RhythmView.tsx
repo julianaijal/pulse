@@ -240,7 +240,7 @@ function YourTrainCard({ train, home, now, onClick, tweaks }: YourTrainCardProps
               Carriages · quietest car {quietestCar(crowding) + 1}
             </span>
           </div>
-          <CrowdingStrip crowding={crowding} style={tweaks.crowdingStyle} invert />
+          <CrowdingStrip crowding={crowding} style="bars" invert />
         </div>
       )}
     </button>

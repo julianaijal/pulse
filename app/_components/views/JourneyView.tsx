@@ -186,7 +186,7 @@ function PlatformCard({ crowding, train, tweaks }: {
 
         {tweaks.verbosity === 'rich' && (
           <div style={{ marginTop: 14 }}>
-            <CrowdingStrip crowding={crowding} style={tweaks.crowdingStyle} />
+            <CrowdingStrip crowding={crowding} style="bars" />
           </div>
         )}
       </div>
