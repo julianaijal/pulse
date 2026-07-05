@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { IDeparture, ITweaks } from '../../interfaces/interfaces';
 import { generateDepartures, STATIONS } from '../../_utils/mock';
-import { IconBack, IconSearch, IconClose } from '../icons/Icons';
+import { IconBack, IconSearch } from '../icons/Icons';
 import FullDepartureRow from '../shared/FullDepartureRow';
+import NowPill from '../shared/NowPill';
 
 interface StationObj {
   code: string;
@@ -23,18 +24,17 @@ interface StationViewProps {
 export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: (s: StationObj) => void }) {
   const [q, setQ] = useState('');
   const [results, setResults] = useState<StationObj[]>(STATIONS.slice(0, 8));
+  const [focused, setFocused] = useState(false);
+
   useEffect(() => {
     if (q.length < 1) {
-      // Show all from local mock
       queueMicrotask(() => setResults(STATIONS.slice(0, 8)));
       return;
     }
-    // First search local mock instantly
     const lo = q.toLowerCase();
     const local = STATIONS.filter(s => s.name.toLowerCase().includes(lo) || s.code.toLowerCase().includes(lo)).slice(0, 10);
     queueMicrotask(() => setResults(local));
 
-    // Then try live API
     let cancelled = false;
     if (q.length >= 2) {
       fetch(`/api/stations?q=${encodeURIComponent(q)}`)
@@ -47,51 +47,68 @@ export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: 
 
   return (
     <div className="view fade-up">
-      <div style={{ padding: '18px 20px 6px' }}>
-        <button onClick={onBack} style={{ padding: '6px 0', color: 'var(--ink-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <IconBack aria-hidden="true" style={{ width: 18, height: 18 }} />
-          <span className="eyebrow" style={{ color: 'var(--ink-2)' }}>Back</span>
-        </button>
+      <div style={{ padding: '24px 18px 12px' }}>
+        <h1 style={{ fontSize: 23, fontWeight: 800, letterSpacing: '-0.02em' }}>Stations</h1>
       </div>
-      <div style={{ padding: '10px 20px 20px' }}>
-        <div className="eyebrow" style={{ marginBottom: 6 }}>Find a station</div>
-        <div className="serif" style={{ fontSize: 34, lineHeight: 1, letterSpacing: '-0.02em' }}>
-          Where are you <em>going?</em>
-        </div>
-      </div>
-      <div style={{ padding: '0 20px' }}>
-        <div style={{
+
+      {/* Search field */}
+      <div style={{ padding: '0 18px' }}>
+        <div className="card" style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '14px 16px', background: 'var(--bg-2)', borderRadius: 14, border: '1px solid var(--line)',
+          padding: '12px 16px', borderRadius: 14,
         }}>
-          <IconSearch aria-hidden="true" style={{ width: 18, height: 18, color: 'var(--ink-3)' }} />
+          <IconSearch aria-hidden="true" style={{ width: 18, height: 18, color: 'var(--ink-4)', flexShrink: 0 }} />
           <label htmlFor="station-search" className="sr-only">Search stations</label>
           <input
             id="station-search"
             autoFocus
             value={q}
             onChange={e => setQ(e.target.value)}
-            placeholder="Amsterdam, Utrecht, ASD…"
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder="Search stations..."
             style={{
               flex: 1, background: 'transparent', border: 0,
-              fontSize: 16, color: 'var(--ink)', fontFamily: 'inherit',
+              fontSize: 14, fontWeight: 600, color: 'var(--ink)', fontFamily: 'inherit',
+              outline: 'none',
             }}
           />
-          {q && (
-            <button onClick={() => setQ('')} aria-label="Clear search" style={{ color: 'var(--ink-3)' }}>
-              <IconClose aria-hidden="true" style={{ width: 16, height: 16 }} />
+          {(q || focused) && (
+            <button onClick={() => setQ('')} style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>
+              Cancel
             </button>
           )}
         </div>
       </div>
-      <div style={{ padding: '20px 20px 0' }}>
+
+      {/* Autocomplete chips */}
+      {q.length > 0 && results.length > 0 && (
+        <div style={{ padding: '10px 18px 0', display: 'flex', gap: 8, overflowX: 'auto' }}>
+          {results.slice(0, 4).map(s => (
+            <button key={s.code} onClick={() => onPick(s)} style={{
+              padding: '6px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+              background: 'var(--primary-tint)', color: 'var(--primary)',
+              border: 'none',
+            }}>
+              {s.code} · {s.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Station list */}
+      <div style={{ padding: '16px 18px 0' }}>
         {results.map(s => (
           <button key={s.code} onClick={() => onPick(s)} aria-label={`${s.name} (${s.code})`} style={{
-            width: '100%', padding: '14px 0', display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', borderBottom: '1px solid var(--line-2)', textAlign: 'left',
-          }}>
-            <div className="serif" style={{ fontSize: 18 }}>{s.name}</div>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--ink-3)' }}>{s.code}</span>
+            width: '100%', padding: '12px 0', display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center', borderBottom: '1px solid var(--line-row)', textAlign: 'left',
+            background: 'transparent', transition: 'background 0.12s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          >
+            <span style={{ fontSize: 15, fontWeight: 700 }}>{s.name}</span>
+            <span style={{ fontSize: 11, color: 'var(--ink-3)', fontWeight: 600 }}>{s.code}</span>
           </button>
         ))}
       </div>
@@ -147,26 +164,26 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
   if (!station) return null;
 
   const now = new Date();
+  const updatedStr = now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="view fade-up">
-      <div style={{ padding: '18px 20px 6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={onBack} style={{ padding: '6px 0', color: 'var(--ink-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <IconBack aria-hidden="true" style={{ width: 18, height: 18 }} />
-          <span className="eyebrow" style={{ color: 'var(--ink-2)' }}>Back</span>
+      {/* Header */}
+      <div style={{ padding: '18px 18px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button onClick={onBack} aria-label="Back" style={{
+          width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
+          border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <IconBack aria-hidden="true" style={{ width: 16, height: 16, color: 'var(--ink)' }} />
         </button>
-        <span className="now-pill">
-          <span className="dot live" /> {now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-        </span>
       </div>
 
-      <div style={{ padding: '10px 20px 20px' }}>
-        <div className="eyebrow" style={{ marginBottom: 4 }}>Station · {station.code}</div>
-        <h1 className="serif" style={{ fontSize: 40, lineHeight: 1, letterSpacing: '-0.02em' }}>
-          {station.name}
-        </h1>
-        <div className="serif" style={{ fontSize: 15, color: 'var(--ink-2)', marginTop: 8, fontStyle: 'italic' }}>
-          {departures ? `${departures.length} departures in the next hour.` : 'loading live board…'}
+      {/* Station info */}
+      <div style={{ padding: '12px 18px 0' }}>
+        <h1 style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.02em' }}>{station.name}</h1>
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>updated {updatedStr}</span>
+          <NowPill label="live board" />
         </div>
       </div>
 
@@ -175,25 +192,22 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
         {departures ? `${departures.length} departures loaded` : ''}
       </div>
 
-      <div style={{ padding: '0 20px' }}>
-        {departures ? departures.map(d => (
-          <FullDepartureRow
-            key={d.id}
-            d={d}
-            onOpen={() => onOpenJourney(d, station.code)}
-            verbose={tweaks.verbosity === 'rich'}
-            crowdingStyle={tweaks.crowdingStyle}
-          />
-        )) : (
-          <div aria-busy="true" aria-label="Vertrektijden laden…">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} style={{ padding: '18px 0', borderBottom: '1px solid var(--line-2)' }}>
-                <div className="skeleton" style={{ height: 22, width: 70, marginBottom: 8 }} />
-                <div className="skeleton" style={{ height: 18, width: '60%' }} />
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Board */}
+      <div style={{ padding: '16px 18px 0' }}>
+        <div className="card" style={{ padding: '0 14px', borderRadius: 16 }}>
+          {departures ? departures.map(d => (
+            <FullDepartureRow key={d.id} d={d} onOpen={() => onOpenJourney(d, station.code)} />
+          )) : (
+            <div aria-busy="true" aria-label="Vertrektijden laden…">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{ padding: '14px 0', borderBottom: '1px solid var(--line-row)' }}>
+                  <div className="skeleton" style={{ height: 18, width: 50, marginBottom: 6 }} />
+                  <div className="skeleton" style={{ height: 16, width: '50%' }} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div style={{ height: 80 }} />

@@ -66,8 +66,5 @@ export interface IDisruption {
 }
 
 export interface ITweaks {
-  theme: 'light' | 'dark';
   verbosity: 'minimal' | 'rich';
-  crowdingStyle: 'bars' | 'dots' | 'heatmap';
-  accent: 'orange' | 'cobalt' | 'sage' | 'plum';
 }

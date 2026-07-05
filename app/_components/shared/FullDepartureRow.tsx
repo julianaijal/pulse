@@ -2,68 +2,68 @@
 
 import React from 'react';
 import { IDeparture } from '../../interfaces/interfaces';
-import { IconArrow } from '../icons/Icons';
-import CrowdingStrip from './CrowdingStrip';
 
 interface FullDepartureRowProps {
   d: IDeparture;
   onOpen: () => void;
-  verbose?: boolean;
-  crowdingStyle?: 'bars' | 'dots' | 'heatmap';
 }
 
-export default function FullDepartureRow({ d, onOpen, verbose = false, crowdingStyle = 'bars' }: FullDepartureRowProps) {
+export default function FullDepartureRow({ d, onOpen }: FullDepartureRowProps) {
   const actual = new Date(d.actualDateTime);
-  const planned = new Date(d.plannedDateTime);
   const timeStr = actual.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-  const plannedStr = planned.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <button
       onClick={onOpen}
       aria-label={`${d.direction}, vertrekt ${timeStr}${d.delayMinutes > 0 ? `, ${d.delayMinutes} min vertraging` : ', op tijd'}${d.cancelled ? ', geannuleerd' : ''}. Klik voor reisdetails.`}
       style={{
-        width: '100%', padding: '16px 0', display: 'grid',
-        gridTemplateColumns: '72px 1fr auto', gap: 14, alignItems: 'start',
-        borderBottom: '1px solid var(--line-2)', textAlign: 'left',
+        width: '100%', padding: '12px 0', display: 'flex', gap: 12, alignItems: 'center',
+        borderBottom: '1px solid var(--line-row)', textAlign: 'left',
+        background: 'transparent', transition: 'background 0.12s',
       }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
-      <div>
-        <div className="serif num" style={{
-          fontSize: 28, lineHeight: 1, letterSpacing: '-0.02em',
+      {/* Time column */}
+      <div style={{ width: 48 }}>
+        <div className="num" style={{
+          fontSize: 16, fontWeight: 800,
           textDecoration: d.cancelled ? 'line-through' : 'none',
+          color: d.cancelled ? 'var(--ink-cancel)' : 'var(--ink)',
         }}>
           {timeStr}
         </div>
-        {d.delayMinutes > 0 && (
-          <div style={{ display: 'flex', gap: 6, marginTop: 5, alignItems: 'baseline' }}>
-            <span className="mono num" style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600 }}>+{d.delayMinutes}</span>
-            <span className="mono num" style={{ fontSize: 10, color: 'var(--ink-3)', textDecoration: 'line-through' }}>{plannedStr}</span>
+        {d.delayMinutes > 0 && !d.cancelled && (
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--warn-accent)', marginTop: 2 }}>
+            +{d.delayMinutes} min
           </div>
-        )}
-        {d.delayMinutes === 0 && !d.cancelled && (
-          <div className="mono" style={{ fontSize: 10.5, color: 'var(--ok-text)', marginTop: 5 }}>on time</div>
         )}
       </div>
 
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
-          <span className="chip">{d.trainCategory}</span>
-          <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>TRACK {d.actualTrack}</span>
-          {d.trackChanged && <span className="chip warn">track changed</span>}
-          {d.cancelled && (
-            <span className="chip" style={{ color: 'var(--bad-text)', background: 'color-mix(in oklab, var(--bad) 14%, transparent)' }}>cancelled</span>
-          )}
+      {/* Middle */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{d.direction}</div>
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>
+          {d.trainCategory} {d.trainId ?? ''}{d.trackChanged ? ' · track changed' : ''}
         </div>
-        <div className="serif" style={{ fontSize: 19, lineHeight: 1.2 }}>{d.direction}</div>
-        {verbose && !d.cancelled && d.crowding && (
-          <div style={{ marginTop: 10, maxWidth: 240 }}>
-            <CrowdingStrip crowding={d.crowding} style={crowdingStyle} size="sm" />
-          </div>
-        )}
       </div>
 
-      <IconArrow aria-hidden="true" style={{ width: 14, height: 14, color: 'var(--ink-3)', marginTop: 10 }} />
+      {/* Status */}
+      <span style={{
+        fontSize: 12, fontWeight: d.cancelled || d.delayMinutes > 0 ? 800 : 700, whiteSpace: 'nowrap',
+        color: d.cancelled ? 'var(--bad)' : d.delayMinutes > 0 ? 'var(--warn-accent)' : 'var(--ok)',
+      }}>
+        {d.cancelled ? 'cancelled' : d.delayMinutes > 0 ? 'delayed' : 'on time'}
+      </span>
+
+      {/* Track badge */}
+      <span style={{
+        minWidth: 28, textAlign: 'center', padding: '2px 6px',
+        border: '1.5px solid var(--line)', borderRadius: 7,
+        fontSize: 12, fontWeight: 700, color: 'var(--ink)',
+      }}>
+        {d.cancelled ? '—' : d.actualTrack}
+      </span>
     </button>
   );
 }

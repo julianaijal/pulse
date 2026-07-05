@@ -6,7 +6,7 @@ const baseProps = {
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
-  strokeWidth: 1.6,
+  strokeWidth: 1.7,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
 };
@@ -105,6 +105,17 @@ export function IconWind(p: IconProps) {
   return (
     <svg {...baseProps} {...p}>
       <path d="M3 8h10a3 3 0 100-6M3 16h14a3 3 0 110 6M3 12h18"/>
+    </svg>
+  );
+}
+
+export function IconSwap(p: IconProps) {
+  return (
+    <svg {...baseProps} {...p}>
+      <path d="M7 10l-3 3 3 3" />
+      <path d="M4 13h12" />
+      <path d="M17 14l3-3-3-3" />
+      <path d="M20 11H8" />
     </svg>
   );
 }
