@@ -188,7 +188,7 @@ function HeroCard({ train, home, now, onClick }: {
   const walkByStr = walkBy.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <button onClick={onClick} aria-label={`Your train to ${train.direction}, departs ${timeStr}${late > 0 ? `, ${late} min delay` : ', on time'}. Opens journey details.`} style={{
+    <button onClick={onClick} aria-label={`Your train to ${train.direction}, departs ${timeStr}${late > 0 ? `, ${late} min delay` : ', on time'}${train.trackChanged ? `, track changed to ${train.actualTrack}` : ''}. Opens journey details.`} style={{
       width: '100%', textAlign: 'left', padding: 0,
       background: 'var(--primary-deep)', color: '#FFFFFF',
       borderRadius: 20, overflow: 'hidden', display: 'block', border: 'none',
@@ -236,13 +236,17 @@ function HeroCard({ train, home, now, onClick }: {
         }}>
           <div style={{
             width: 40, height: 40, borderRadius: 10,
-            border: '2px solid rgba(255,255,255,0.35)',
+            border: train.trackChanged ? '2px solid var(--warn)' : '2px solid rgba(255,255,255,0.35)',
+            background: train.trackChanged ? 'var(--warn)' : 'transparent',
+            color: train.trackChanged ? 'var(--warn-dark)' : '#FFFFFF',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 19, fontWeight: 800,
           }}>
             {train.actualTrack}
           </div>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', marginTop: 3, color: 'var(--primary-muted)' }}>TRACK</span>
+          <span style={{ fontSize: 10, fontWeight: train.trackChanged ? 800 : 700, letterSpacing: '0.1em', marginTop: 3, color: train.trackChanged ? 'var(--warn)' : 'var(--primary-muted)' }}>
+            {train.trackChanged ? 'NEW TRACK' : 'TRACK'}
+          </span>
         </div>
       </div>
 

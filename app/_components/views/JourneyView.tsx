@@ -127,13 +127,20 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{
               width: 34, height: 34, borderRadius: 10,
-              border: '1.5px solid var(--line)',
+              border: train.trackChanged ? '1.5px solid var(--warn-accent)' : '1.5px solid var(--line)',
+              background: train.trackChanged ? 'var(--warn-tint)' : 'transparent',
+              color: train.trackChanged ? 'var(--warn-text)' : 'var(--ink)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 16, fontWeight: 800,
             }}>
               {train.actualTrack}
             </div>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--ink-3)', marginTop: 2 }}>TRACK</span>
+            <span style={{ fontSize: 10, fontWeight: train.trackChanged ? 800 : 700, letterSpacing: '0.1em', color: train.trackChanged ? 'var(--warn-text)' : 'var(--ink-3)', marginTop: 2 }}>
+              {train.trackChanged ? 'NEW TRACK' : 'TRACK'}
+            </span>
+            {train.trackChanged && (
+              <span className="sr-only">Track changed to {train.actualTrack}</span>
+            )}
           </div>
         )}
       </div>

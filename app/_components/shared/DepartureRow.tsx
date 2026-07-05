@@ -15,7 +15,7 @@ export default function DepartureRow({ d, onClick }: DepartureRowProps) {
   return (
     <button
       onClick={onClick}
-      aria-label={`${d.direction}, departs ${timeStr}${d.delayMinutes > 0 ? `, ${d.delayMinutes} min delay` : ', on time'}${d.cancelled ? ', cancelled' : ''}. Opens journey details.`}
+      aria-label={`${d.direction}, departs ${timeStr}${d.delayMinutes > 0 ? `, ${d.delayMinutes} min delay` : ', on time'}${d.cancelled ? ', cancelled' : ''}${d.trackChanged && !d.cancelled ? `, track changed to ${d.actualTrack}` : ''}. Opens journey details.`}
       style={{
         width: '100%', padding: '11px 0', display: 'flex', gap: 10, alignItems: 'center',
         borderBottom: '1px solid var(--line-row)', textAlign: 'left',
@@ -60,8 +60,11 @@ export default function DepartureRow({ d, onClick }: DepartureRowProps) {
       {/* Track badge */}
       <span style={{
         minWidth: 28, textAlign: 'center', padding: '2px 6px',
-        border: '1.5px solid var(--line)', borderRadius: 7,
-        fontSize: 12, fontWeight: 700, color: 'var(--ink)',
+        border: d.trackChanged && !d.cancelled ? '1.5px solid var(--warn-accent)' : '1.5px solid var(--line)',
+        background: d.trackChanged && !d.cancelled ? 'var(--warn-tint)' : 'transparent',
+        borderRadius: 7,
+        fontSize: 12, fontWeight: d.trackChanged && !d.cancelled ? 800 : 700,
+        color: d.trackChanged && !d.cancelled ? 'var(--warn-text)' : 'var(--ink)',
       }}>
         {d.cancelled ? '—' : d.actualTrack}
       </span>
