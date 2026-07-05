@@ -18,6 +18,7 @@ export interface IStop {
   actualTime: string;    // ISO
   track: string;
   status: 'ORIGIN' | 'STOP' | 'DESTINATION';
+  crowdForecast?: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 
 export interface IDeparture {
