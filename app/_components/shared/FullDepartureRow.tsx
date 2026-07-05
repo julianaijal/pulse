@@ -34,7 +34,7 @@ export default function FullDepartureRow({ d, onOpen }: FullDepartureRowProps) {
           {timeStr}
         </div>
         {d.delayMinutes > 0 && !d.cancelled && (
-          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--warn-accent)', marginTop: 2 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--warn-text)', marginTop: 2 }}>
             +{d.delayMinutes} min
           </div>
         )}
@@ -51,7 +51,7 @@ export default function FullDepartureRow({ d, onOpen }: FullDepartureRowProps) {
       {/* Status */}
       <span style={{
         fontSize: 12, fontWeight: d.cancelled || d.delayMinutes > 0 ? 800 : 700, whiteSpace: 'nowrap',
-        color: d.cancelled ? 'var(--bad)' : d.delayMinutes > 0 ? 'var(--warn-accent)' : 'var(--ok)',
+        color: d.cancelled ? 'var(--bad)' : d.delayMinutes > 0 ? 'var(--warn-text)' : 'var(--ok-text)',
       }}>
         {d.cancelled ? 'cancelled' : d.delayMinutes > 0 ? 'delayed' : 'on time'}
       </span>

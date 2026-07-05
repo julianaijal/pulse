@@ -214,7 +214,7 @@ function HeroCard({ train, home, now, onClick }: {
             {late > 0 && (
               <span style={{
                 padding: '3px 10px', borderRadius: 999, fontSize: 12, fontWeight: 800,
-                background: 'var(--warn)', color: '#FFFFFF',
+                background: 'var(--warn)', color: 'var(--warn-dark)',
               }}>
                 +{late} min
               </span>
