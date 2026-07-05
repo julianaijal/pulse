@@ -11,6 +11,7 @@ interface NsJourneyEvent {
   actualTime?: string;
   plannedTrack?: string;
   actualTrack?: string;
+  crowdForecast?: string; // LOW | MEDIUM | HIGH | UNKNOWN
 }
 
 interface NsJourneyStop {
@@ -58,6 +59,7 @@ export async function GET(
       const event = s.departures?.[0] ?? s.arrivals?.[0];
       if (!event?.plannedTime) continue;
 
+      const crowd = event.crowdForecast;
       stops.push({
         code: s.id.split('_')[0].toUpperCase(),
         name: s.stop.name,
@@ -68,6 +70,10 @@ export async function GET(
           s.status === 'ORIGIN' || s.status === 'DESTINATION'
             ? s.status
             : 'STOP',
+        crowdForecast:
+          crowd === 'LOW' || crowd === 'MEDIUM' || crowd === 'HIGH'
+            ? crowd
+            : undefined,
       });
     }
 

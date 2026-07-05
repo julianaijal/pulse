@@ -66,6 +66,7 @@ describe("GET /api/journey/[trainId]", () => {
                     actualTime: "2026-06-11T08:16:00+02:00",
                     plannedTrack: "5",
                     actualTrack: "5",
+                    crowdForecast: "HIGH",
                   },
                 ],
               },
@@ -91,6 +92,7 @@ describe("GET /api/journey/[trainId]", () => {
                     plannedTime: "2026-06-11T08:28:00+02:00",
                     plannedTrack: "3",
                     actualTrack: "4",
+                    crowdForecast: "UNKNOWN",
                   },
                 ],
               },
@@ -110,6 +112,7 @@ describe("GET /api/journey/[trainId]", () => {
                     plannedTime: "2026-06-11T09:12:00+02:00",
                     actualTime: "2026-06-11T09:14:00+02:00",
                     plannedTrack: "15",
+                    crowdForecast: "LOW",
                   },
                 ],
                 departures: [],
@@ -132,6 +135,7 @@ describe("GET /api/journey/[trainId]", () => {
         actualTime: "2026-06-11T08:16:00+02:00",
         track: "5",
         status: "ORIGIN",
+        crowdForecast: "HIGH",
       },
       {
         code: "SHL",
@@ -148,6 +152,7 @@ describe("GET /api/journey/[trainId]", () => {
         actualTime: "2026-06-11T09:14:00+02:00",
         track: "15",
         status: "DESTINATION",
+        crowdForecast: "LOW",
       },
     ]);
   });

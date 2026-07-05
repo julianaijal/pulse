@@ -98,8 +98,11 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
 
   const hereIdx = stops && fromCode ? stops.findIndex(s => s.code === fromCode) : -1;
   const crowding = train.crowding;
-  const quietCar = crowding && crowding.length > 0 ? quietestIdx(crowding) : -1;
-  const crowdPct = crowding && crowding.length > 0 ? Math.round(crowding[quietCar] * 100) : null;
+  const hasCrowding = !!crowding && crowding.length > 0;
+  const quietCar = hasCrowding ? quietestIdx(crowding) : -1;
+  const crowdPct = hasCrowding ? Math.round(crowding[quietCar] * 100) : null;
+  // Real NS forecast for the boarding stop (falls back to the origin)
+  const forecast = stops?.[hereIdx >= 0 ? hereIdx : 0]?.crowdForecast;
 
   return (
     <div className="view fade-up">
@@ -145,22 +148,36 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
         )}
       </div>
 
-      {/* Where to stand */}
-      {crowding && crowding.length > 0 && (
+      {/* Where to stand / crowding */}
+      {(hasCrowding || forecast) && (
         <div style={{ padding: '0 18px 12px' }}>
           <div className="card" style={{ padding: 16, borderRadius: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span className="eyebrow">WHERE TO STAND</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: crowdPct! < 40 ? 'var(--ok-text)' : crowdPct! < 75 ? 'var(--warn-text)' : 'var(--bad)' }}>
-                Car {quietCar + 1} · {crowdPct}% full
-              </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: hasCrowding ? 12 : 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="eyebrow">{hasCrowding ? 'WHERE TO STAND' : 'CROWDING'}</span>
+                {forecast && (
+                  <span style={{
+                    padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 800,
+                    background: forecast === 'LOW' ? 'var(--ok-tint)' : forecast === 'MEDIUM' ? 'var(--warn-tint)' : 'var(--bad-tint)',
+                    color: forecast === 'LOW' ? 'var(--ok-text)' : forecast === 'MEDIUM' ? 'var(--warn-text)' : 'var(--bad)',
+                  }}>
+                    {forecast === 'LOW' ? 'Quiet train' : forecast === 'MEDIUM' ? 'Fairly busy' : 'Very busy'}
+                  </span>
+                )}
+              </div>
+              {hasCrowding && (
+                <span style={{ fontSize: 12, fontWeight: 700, color: crowdPct! < 40 ? 'var(--ok-text)' : crowdPct! < 75 ? 'var(--warn-text)' : 'var(--bad)' }}>
+                  Car {quietCar + 1} · {crowdPct}% full
+                </span>
+              )}
             </div>
 
+            {hasCrowding && (<>
             {/* Train diagram */}
             <div style={{ display: 'flex', gap: 3 }}>
-              {crowding.map((c, i) => {
+              {crowding!.map((c, i) => {
                 const isRec = i === quietCar;
-                const isEnd = i === 0 || i === crowding.length - 1;
+                const isEnd = i === 0 || i === crowding!.length - 1;
                 return (
                   <div key={i} style={{
                     flex: 1, height: 34, position: 'relative',
@@ -186,7 +203,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
             {/* Platform zones */}
             <div style={{ display: 'flex', marginTop: 10, gap: 0 }}>
               {['A', 'B', 'C', 'D'].map((zone, zi) => {
-                const isRec = quietCar >= (crowding.length / 4) * zi && quietCar < (crowding.length / 4) * (zi + 1);
+                const isRec = quietCar >= (crowding!.length / 4) * zi && quietCar < (crowding!.length / 4) * (zi + 1);
                 return (
                   <div key={zone} style={{
                     flex: 1, textAlign: 'center', paddingTop: 6,
@@ -199,6 +216,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
                 );
               })}
             </div>
+            </>)}
           </div>
         </div>
       )}
