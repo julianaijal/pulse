@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { IDeparture, IStop, ITweaks } from '../../interfaces/interfaces';
+import { IDeparture, IStop } from '../../interfaces/interfaces';
 import { IconBack } from '../icons/Icons';
 import Loader from '../_partials/Loader';
 
 interface JourneyViewProps {
   train: IDeparture | null;
   fromCode?: string;
-  tweaks: ITweaks;
   onBack: () => void;
   onNavigate: (tab: 'rhythm' | 'search') => void;
 }

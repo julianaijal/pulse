@@ -64,16 +64,16 @@ export default function StationPicker({ label, value, onChange }: StationPickerP
         aria-label={`${label}: ${value?.name ?? 'not set'}. Click to change.`}
         style={{
           width: '100%', padding: '10px 14px',
-          background: 'var(--bg-2)', borderRadius: 10,
+          background: 'var(--card)', borderRadius: 10,
           border: '1px solid var(--line)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           textAlign: 'left',
         }}
       >
-        <span className="serif" style={{ fontSize: 15 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)' }}>
           {value?.name ?? 'Select station'}
         </span>
-        <span className="mono" style={{ fontSize: 10.5, color: 'var(--ink-3)' }}>
+        <span style={{ fontSize: 10.5, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
           {value?.code ?? ''}
         </span>
       </button>
@@ -84,8 +84,8 @@ export default function StationPicker({ label, value, onChange }: StationPickerP
     <div>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 12px', background: 'var(--bg-2)', borderRadius: 10,
-        border: '1px solid var(--accent)',
+        padding: '8px 12px', background: 'var(--card)', borderRadius: 10,
+        border: '1px solid var(--primary)',
       }}>
         <IconSearch aria-hidden="true" style={{ width: 14, height: 14, color: 'var(--ink-3)', flexShrink: 0 }} />
         <label htmlFor={`picker-${label}`} className="sr-only">{label}</label>
@@ -116,12 +116,12 @@ export default function StationPicker({ label, value, onChange }: StationPickerP
             style={{
               width: '100%', padding: '8px 14px',
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              textAlign: 'left', borderBottom: '1px solid var(--line-2)',
+              textAlign: 'left', borderBottom: '1px solid var(--line-row)',
               fontSize: 14,
             }}
           >
-            <span>{s.name}</span>
-            <span className="mono" style={{ fontSize: 10, color: 'var(--ink-3)' }}>{s.code}</span>
+            <span style={{ color: 'var(--ink)' }}>{s.name}</span>
+            <span style={{ fontSize: 10, color: 'var(--ink-3)', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>{s.code}</span>
           </button>
         ))}
       </div>
