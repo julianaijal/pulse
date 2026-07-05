@@ -181,8 +181,6 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
             key={d.id}
             d={d}
             onOpen={() => onOpenJourney(d, station.code)}
-            verbose={tweaks.verbosity === 'rich'}
-            crowdingStyle="bars"
           />
         )) : (
           <div aria-busy="true" aria-label="Vertrektijden laden…">

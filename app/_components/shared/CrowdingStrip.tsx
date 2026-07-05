@@ -4,93 +4,45 @@ import React from 'react';
 
 interface CrowdingStripProps {
   crowding: number[];
-  style?: 'bars' | 'dots' | 'heatmap';
-  invert?: boolean;
+  variant?: 'hero' | 'card' | 'journey';
   size?: 'sm' | 'md';
+  recommendedCar?: number;
 }
 
-export function crowdingColor(c: number, invert = false): string {
-  if (invert) {
-    if (c < 0.4) return 'var(--ok-on-ink)';
-    if (c < 0.75) return 'var(--warn-on-ink)';
-    return 'var(--bad-on-ink)';
-  }
-  if (c < 0.4) return 'var(--ok)';
-  if (c < 0.75) return 'var(--warn)';
-  return 'var(--bad)';
-}
-
-export default function CrowdingStrip({ crowding, style = 'bars', invert = false, size = 'md' }: CrowdingStripProps) {
-  const h = size === 'sm' ? 14 : 22;
-  const textMuted = invert ? 'color-mix(in oklab, var(--bg), transparent 50%)' : 'var(--ink-3)';
+export default function CrowdingStrip({ crowding, variant = 'card', size = 'md', recommendedCar }: CrowdingStripProps) {
+  const h = size === 'sm' ? 14 : variant === 'hero' ? 22 : 19;
   const srSummary = crowding.map((c, i) =>
     `car ${i + 1} ${c < 0.4 ? 'quiet' : c < 0.75 ? 'moderate' : 'busy'}`
   ).join(', ');
 
-  if (style === 'dots') {
-    return (
-      <div style={{ display: 'flex', gap: 6 }}>
-        <span className="sr-only">Carriage occupancy: {srSummary}</span>
-        {crowding.map((c, i) => (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-            <div style={{ display: 'flex', gap: 2 }}>
-              {[0, 1, 2].map(tier => (
-                <div key={tier} style={{
-                  width: 4, height: 4, borderRadius: 4,
-                  background: c * 3 > tier
-                    ? crowdingColor(c, invert)
-                    : (invert ? 'color-mix(in oklab, var(--bg), transparent 85%)' : 'var(--line)'),
-                }} />
-              ))}
-            </div>
-            <span className="mono" style={{ fontSize: 9, color: textMuted }}>{i + 1}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (style === 'heatmap') {
-    return (
-      <div>
-        <span className="sr-only">Carriage occupancy: {srSummary}</span>
-        <div style={{ display: 'flex', gap: 3, height: h, borderRadius: 4, overflow: 'hidden' }}>
-          {crowding.map((c, i) => (
-            <div key={i} style={{ flex: 1, background: crowdingColor(c, invert), opacity: 0.35 + c * 0.65 }} />
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 3, marginTop: 4 }}>
-          {crowding.map((_, i) => (
-            <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-              <span className="mono" style={{ fontSize: 9, color: textMuted }}>{i + 1}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // bars (default)
   return (
     <div>
       <span className="sr-only">Carriage occupancy: {srSummary}</span>
-      <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: h }}>
-        {crowding.map((c, i) => (
-          <div key={i} style={{
-            flex: 1,
-            height: `${Math.max(10, c * 100)}%`,
-            background: crowdingColor(c, invert),
-            borderRadius: 2,
-            transition: 'height 0.4s',
-          }} />
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-        {crowding.map((_, i) => (
-          <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-            <span className="mono" style={{ fontSize: 9, color: textMuted }}>{i + 1}</span>
-          </div>
-        ))}
+      <div style={{ display: 'flex', gap: 4 }}>
+        {crowding.map((c, i) => {
+          const isRec = recommendedCar === i;
+          let bg: string;
+          let border: string | undefined;
+
+          if (variant === 'hero') {
+            if (isRec) { bg = '#2FCB82'; border = '2px solid #7FE0AE'; }
+            else if (c >= 0.75) { bg = '#FFB300'; }
+            else { bg = `rgba(255,255,255,${0.28 + c * 0.17})`; }
+          } else {
+            if (isRec) { bg = '#2FCB82'; border = '2px solid #0E9F5B'; }
+            else if (c >= 0.75) { bg = '#E88A00'; }
+            else if (c >= 0.4) { bg = '#8FA3BE'; }
+            else { bg = '#CBD7E8'; }
+          }
+
+          return (
+            <div key={i} style={{
+              flex: 1, height: h, borderRadius: 6,
+              background: bg,
+              border: border ?? 'none',
+            }} />
+          );
+        })}
       </div>
     </div>
   );

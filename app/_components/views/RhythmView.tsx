@@ -240,7 +240,7 @@ function YourTrainCard({ train, home, now, onClick, tweaks }: YourTrainCardProps
               Carriages · quietest car {quietestCar(crowding) + 1}
             </span>
           </div>
-          <CrowdingStrip crowding={crowding} style="bars" invert />
+          <CrowdingStrip crowding={crowding} variant="hero" />
         </div>
       )}
     </button>
@@ -314,7 +314,7 @@ function LaterToday({ departures, onOpen, tweaks, homeCode }: { departures: IDep
       </div>
       <div style={{ padding: '0 20px' }}>
         {list.map(d => (
-          <DepartureRow key={d.id} d={d} onClick={() => onOpen(d)} verbose={tweaks.verbosity === 'rich'} />
+          <DepartureRow key={d.id} d={d} onClick={() => onOpen(d)} />
         ))}
       </div>
     </div>
