@@ -8,6 +8,7 @@ import { IconSwap } from '../icons/Icons';
 import CrowdingStrip from '../shared/CrowdingStrip';
 import DepartureRow from '../shared/DepartureRow';
 import NowPill from '../shared/NowPill';
+import DemoDataBanner from '../shared/DemoDataBanner';
 
 interface RhythmViewProps {
   tweaks: ITweaks;
@@ -29,7 +30,7 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
   const home = homeStation ?? { code: 'ASD', name: 'Amsterdam Centraal' };
   const work = workStation ?? { code: 'UT', name: 'Utrecht Centraal' };
   const [now, setNow] = useState(new Date());
-  const departures = useDepartures(home.code);
+  const { departures, source, retry } = useDepartures(home.code);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
@@ -84,6 +85,13 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {departures ? `${departures.length} departures loaded` : ''}
       </div>
+
+      {/* Demo-data notice */}
+      {source === 'demo' && (
+        <div style={{ padding: '0 18px 12px' }}>
+          <DemoDataBanner onRetry={retry} />
+        </div>
+      )}
 
       {/* Desktop grid */}
       <div className="rhythm-grid">
