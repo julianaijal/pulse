@@ -10,12 +10,12 @@ interface FullDepartureRowProps {
 
 export default function FullDepartureRow({ d, onOpen }: FullDepartureRowProps) {
   const actual = new Date(d.actualDateTime);
-  const timeStr = actual.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const timeStr = actual.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <button
       onClick={onOpen}
-      aria-label={`${d.direction}, vertrekt ${timeStr}${d.delayMinutes > 0 ? `, ${d.delayMinutes} min vertraging` : ', op tijd'}${d.cancelled ? ', geannuleerd' : ''}. Klik voor reisdetails.`}
+      aria-label={`${d.direction}, departs ${timeStr}${d.delayMinutes > 0 ? `, ${d.delayMinutes} min delay` : ', on time'}${d.cancelled ? ', cancelled' : ''}. Opens journey details.`}
       style={{
         width: '100%', padding: '12px 0', display: 'flex', gap: 12, alignItems: 'center',
         borderBottom: '1px solid var(--line-row)', textAlign: 'left',

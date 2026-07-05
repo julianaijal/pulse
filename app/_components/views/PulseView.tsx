@@ -102,7 +102,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
         {activeDisruptions.map(d => d.label).join(', ')}
       </div>
       <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {selected ? `Trein ${selected.id} geselecteerd: ${selected.from.name} naar ${selected.to.name}${selected.delayMin > 0 ? `, ${selected.delayMin} min vertraging` : ''}.` : ''}
+        {selected ? `Train ${selected.id} selected: ${selected.from.name} to ${selected.to.name}${selected.delayMin > 0 ? `, ${selected.delayMin} min delay` : ''}.` : ''}
       </div>
 
       {/* Header */}
@@ -133,7 +133,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
               viewBox="0 0 420 540"
               preserveAspectRatio="xMidYMid meet"
               role="img"
-              aria-label="Kaart van het Nederlandse spoornetwerk met live treinposities en verstoringen."
+              aria-label="Map of the Dutch rail network with live train positions and disruptions."
               style={{ width: '100%', height: 'auto', display: 'block' }}
             >
               {/* NL outline */}
@@ -188,7 +188,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                 return (
                   <g key={tr.id}
                     role="button" tabIndex={0}
-                    aria-label={`Trein ${tr.id} (${tr.cat}): ${tr.from.name} → ${tr.to.name}${tr.delayMin > 0 ? `, ${tr.delayMin} min vertraging` : ', op tijd'}`}
+                    aria-label={`Train ${tr.id} (${tr.cat}): ${tr.from.name} to ${tr.to.name}${tr.delayMin > 0 ? `, ${tr.delayMin} min delay` : ', on time'}`}
                     style={{ cursor: 'pointer' }}
                     onClick={() => setSelected(tr)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(tr); } }}
@@ -231,7 +231,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                       {selected.delayMin > 0 ? `+${selected.delayMin} min late` : 'On time'} · {(selected.t * 100).toFixed(0)}% along route
                     </div>
                   </div>
-                  <button onClick={() => setSelected(null)} aria-label="Sluit treinkaart" style={{ padding: 4, color: 'var(--ink-3)' }}>
+                  <button onClick={() => setSelected(null)} aria-label="Close train card" style={{ padding: 4, color: 'var(--ink-3)' }}>
                     <IconClose style={{ width: 18, height: 18 }} />
                   </button>
                 </div>

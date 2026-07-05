@@ -164,7 +164,7 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
   if (!station) return null;
 
   const now = new Date();
-  const updatedStr = now.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const updatedStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div className="view fade-up">
@@ -198,7 +198,7 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
           {departures ? departures.map(d => (
             <FullDepartureRow key={d.id} d={d} onOpen={() => onOpenJourney(d, station.code)} />
           )) : (
-            <div aria-busy="true" aria-label="Vertrektijden laden…">
+            <div aria-busy="true" aria-label="Loading departures…">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} style={{ padding: '14px 0', borderBottom: '1px solid var(--line-row)' }}>
                   <div className="skeleton" style={{ height: 18, width: 50, marginBottom: 6 }} />

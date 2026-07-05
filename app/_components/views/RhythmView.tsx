@@ -178,17 +178,17 @@ function HeroCard({ train, home, now, onClick }: {
   const planned = new Date(train.plannedDateTime);
   const minsTo = Math.max(0, Math.round((actual.getTime() - now.getTime()) / 60000));
   const late = train.delayMinutes;
-  const timeStr = actual.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-  const plannedStr = planned.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const timeStr = actual.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const plannedStr = planned.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const crowding = train.crowding ?? [];
   const quietIdx = crowding.length > 0 ? quietestCar(crowding) : -1;
 
   // Walk-by time: subtract 12 minutes from departure
   const walkBy = new Date(actual.getTime() - 12 * 60000);
-  const walkByStr = walkBy.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const walkByStr = walkBy.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <button onClick={onClick} aria-label={`Jouw trein naar ${train.direction}, vertrekt ${timeStr}${late > 0 ? `, ${late} minuten vertraging` : ', op tijd'}. Klik voor reisdetails.`} style={{
+    <button onClick={onClick} aria-label={`Your train to ${train.direction}, departs ${timeStr}${late > 0 ? `, ${late} min delay` : ', on time'}. Opens journey details.`} style={{
       width: '100%', textAlign: 'left', padding: 0,
       background: 'var(--primary-deep)', color: '#FFFFFF',
       borderRadius: 20, overflow: 'hidden', display: 'block', border: 'none',
@@ -277,7 +277,7 @@ function HeroCard({ train, home, now, onClick }: {
 function SmartSwap({ train, alternatives, onSwap }: { train: IDeparture; alternatives: IDeparture[]; onSwap: (d: IDeparture) => void }) {
   const best = alternatives[0];
   if (!best) return null;
-  const bestTime = new Date(best.actualDateTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const bestTime = new Date(best.actualDateTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
   return (
     <div style={{ padding: '12px 18px 0' }}>
@@ -299,7 +299,7 @@ function SmartSwap({ train, alternatives, onSwap }: { train: IDeparture; alterna
         </div>
         <button
           onClick={() => onSwap(best)}
-          aria-label={`Wissel naar de ${bestTime} ${best.trainCategory}`}
+          aria-label={`Swap to the ${bestTime} ${best.trainCategory}`}
           style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', padding: '4px 8px', whiteSpace: 'nowrap' }}
         >
           Swap

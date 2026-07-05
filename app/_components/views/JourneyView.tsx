@@ -62,13 +62,13 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
           </button>
         </div>
         <div style={{ padding: '16px 18px' }}>
-          <h1 style={{ fontSize: 19, fontWeight: 800 }}>Geen actieve reis</h1>
+          <h1 style={{ fontSize: 19, fontWeight: 800 }}>No active journey</h1>
           <p style={{ marginTop: 10, fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, maxWidth: 360 }}>
-            Kies een trein in{' '}
+            Pick a train in{' '}
             <button onClick={() => onNavigate('rhythm')} style={{ color: 'var(--primary)', fontWeight: 700, padding: 0, fontSize: 13 }}>Home</button>
-            {' '}of{' '}
+            {' '}or{' '}
             <button onClick={() => onNavigate('search')} style={{ color: 'var(--primary)', fontWeight: 700, padding: 0, fontSize: 13 }}>Stations</button>
-            {' '}om hem hier te volgen.
+            {' '}to track it here.
           </p>
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
   const shareEta = async () => {
     const arrival = stops && stops.length > 0 ? stops[stops.length - 1] : null;
     const etaStr = arrival
-      ? new Date(arrival.actualTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+      ? new Date(arrival.actualTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
       : null;
     const text = arrival && etaStr
       ? `I'm on the ${train.trainCategory} to ${train.direction}, arriving at ${arrival.name} around ${etaStr}.`
@@ -237,7 +237,7 @@ export default function JourneyView({ train, fromCode, onBack, onNavigate }: Jou
 }
 
 function StopRow({ stop, here, last, isPast }: { stop: IStop; here: boolean; last: boolean; isPast: boolean }) {
-  const fmt = (iso: string) => new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const fmt = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const delayed = new Date(stop.actualTime).getTime() !== new Date(stop.plannedTime).getTime();
   const delayMs = new Date(stop.actualTime).getTime() - new Date(stop.plannedTime).getTime();
   const delayMin = Math.round(delayMs / 60000);
