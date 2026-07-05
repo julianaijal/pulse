@@ -54,7 +54,7 @@ export default function DepartureRow({ d, onClick }: DepartureRowProps) {
         fontSize: 12, fontWeight: d.cancelled || d.delayMinutes > 0 ? 800 : 700, whiteSpace: 'nowrap',
         color: d.cancelled ? 'var(--bad)' : d.delayMinutes > 0 ? 'var(--warn-text)' : 'var(--ok-text)',
       }}>
-        {d.cancelled ? 'cancelled' : d.delayMinutes > 0 ? `+${d.delayMinutes}` : 'on time'}
+        {d.cancelled ? 'cancelled' : d.delayMinutes > 0 ? `+${d.delayMinutes} min` : 'on time'}
       </span>
 
       {/* Track badge */}

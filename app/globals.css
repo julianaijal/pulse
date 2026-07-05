@@ -21,7 +21,6 @@
   --ok:            #0E9F5B;
   --ok-light:      #2FCB82;
   --ok-tint:       #D9F3E6;
-  --ok-ring:       #7FE0AE;
   --ok-text:       #0B7A46; /* green for small text: >=4.5:1 on white and --ok-tint */
 
   --warn:          #FFB300;
@@ -33,7 +32,6 @@
 
   --bad:           #DF3B4B;
   --bad-tint:      #FDECEE;
-  --bad-border:    #F3D4D8;
 
   --map-land:      #EEF3FA;
   --map-stroke:    #D4DEEC;
@@ -109,6 +107,16 @@ body {
   color: var(--ink-2);
   z-index: 60;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Expanded touch target for small circular buttons: invisible ::after pad
+   brings 34-36px visuals up to a 44px+ effective hit area. The element
+   itself must be positioned (relative/fixed). */
+.hit-target::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
 }
 
 /* ── Desktop layout (≥ 768px) ── */
@@ -270,7 +278,7 @@ h1, h2, h3, h4, h5, h6 { font: inherit; }
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 10px 4px 0;
   color: var(--ink-3);
-  font-size: 0.59375rem; /* 9.5/16 */ letter-spacing: 0; text-transform: none; font-weight: 600;
+  font-size: 0.625rem; /* 10/16 */ letter-spacing: 0; text-transform: none; font-weight: 600;
   transition: color 0.15s;
 }
 .tabbar button[data-active="true"] {
@@ -384,7 +392,7 @@ h1, h2, h3, h4, h5, h6 { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .fade-up { animation: none; }
   .skeleton { animation: none; opacity: 0.55; }
-  @keyframes pulseDot { 0%, 100% { opacity: 1; } }
+  .dot.live { animation: none; }
   .pulse-sidebar-item { transition: none; }
   .tabbar button { transition: none; }
 }

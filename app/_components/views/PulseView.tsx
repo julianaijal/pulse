@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { IDeparture, IActiveTrain, IDisruption, ITweaks } from '../../interfaces/interfaces';
+import { IDeparture, IActiveTrain, IDisruption } from '../../interfaces/interfaces';
 import { generateActiveTrains, generateDisruptions, STATIONS } from '../../_utils/mock';
 import { IconClose, IconArrow } from '../icons/Icons';
 import NowPill from '../shared/NowPill';
 
 interface PulseViewProps {
-  tweaks: ITweaks;
   onOpenJourney: (train: IDeparture) => void;
   onOpenStation: (station: { code: string; name: string; lat?: number; lng?: number }) => void;
 }
@@ -228,7 +227,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                       {selected.from.name} <span style={{ color: 'var(--ink-3)' }}>→</span> {selected.to.name}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 4 }}>
-                      {selected.delayMin > 0 ? `+${selected.delayMin} min late` : 'On time'} · {(selected.t * 100).toFixed(0)}% along route
+                      {selected.delayMin > 0 ? `+${selected.delayMin} min late` : 'On time'} · {Math.round(selected.t * 100)}% of the way there
                     </div>
                   </div>
                   <button onClick={() => setSelected(null)} aria-label="Close train card" style={{ padding: 4, color: 'var(--ink-3)' }}>

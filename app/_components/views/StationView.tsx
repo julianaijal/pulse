@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { IDeparture, ITweaks } from '../../interfaces/interfaces';
+import { IDeparture } from '../../interfaces/interfaces';
 import { generateDepartures, STATIONS } from '../../_utils/mock';
 import { IconBack, IconClose, IconSearch } from '../icons/Icons';
 import FullDepartureRow from '../shared/FullDepartureRow';
@@ -16,7 +16,6 @@ interface StationObj {
 
 interface StationViewProps {
   station: StationObj | null;
-  tweaks: ITweaks;
   onBack: () => void;
   onOpenJourney: (train: IDeparture, fromCode?: string) => void;
 }
@@ -118,7 +117,7 @@ export function StationSearch({ onBack, onPick }: { onBack: () => void; onPick: 
   );
 }
 
-export default function StationView({ station, tweaks, onBack, onOpenJourney }: StationViewProps) {
+export default function StationView({ station, onBack, onOpenJourney }: StationViewProps) {
   const [departures, setDepartures] = useState<IDeparture[] | null>(null);
 
   useEffect(() => {
@@ -171,8 +170,8 @@ export default function StationView({ station, tweaks, onBack, onOpenJourney }: 
     <div className="view fade-up">
       {/* Header */}
       <div style={{ padding: '18px 18px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <button onClick={onBack} aria-label="Back" style={{
-          width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
+        <button onClick={onBack} aria-label="Back" className="hit-target" style={{
+          position: 'relative', width: 34, height: 34, borderRadius: 17, background: 'var(--card)',
           border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
           <IconBack aria-hidden="true" style={{ width: 16, height: 16, color: 'var(--ink)' }} />

@@ -242,7 +242,7 @@ function HeroCard({ train, home, now, onClick }: {
           }}>
             {train.actualTrack}
           </div>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', marginTop: 3, color: 'var(--primary-muted)' }}>TRACK</span>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', marginTop: 3, color: 'var(--primary-muted)' }}>TRACK</span>
         </div>
       </div>
 
