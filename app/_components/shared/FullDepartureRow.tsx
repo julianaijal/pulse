@@ -23,6 +23,8 @@ export default function FullDepartureRow({ d, onOpen }: FullDepartureRowProps) {
       }}
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+      onFocus={e => (e.currentTarget.style.background = 'var(--subtle)')}
+      onBlur={e => (e.currentTarget.style.background = 'transparent')}
     >
       {/* Time column */}
       <div style={{ width: 48 }}>
