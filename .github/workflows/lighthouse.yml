@@ -21,7 +21,10 @@ jobs:
           # Vercel Deployment Protection is enabled for previews; this
           # Protection Bypass for Automation secret lets Lighthouse through.
           VERCEL_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        # set-bypass-cookie makes the first response set a _vercel_jwt cookie
+        # so sub-requests without extra headers (robots.txt fetch, page XHRs)
+        # also pass Deployment Protection.
         run: >
           npx --yes @lhci/cli@0.15.x autorun
           --collect.url="$PREVIEW_URL"
-          --collect.settings.extraHeaders="{\"x-vercel-protection-bypass\":\"$VERCEL_BYPASS\"}"
+          --collect.settings.extraHeaders="{\"x-vercel-protection-bypass\":\"$VERCEL_BYPASS\",\"x-vercel-set-bypass-cookie\":\"true\"}"
