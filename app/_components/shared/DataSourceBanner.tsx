@@ -1,12 +1,20 @@
 'use client';
 
 import React from 'react';
+import { formatTime } from '../../_utils/format';
 
-interface DemoDataBannerProps {
+interface DataSourceBannerProps {
+  variant: 'demo' | 'cached';
+  cachedAt?: number | null;
   onRetry: () => void;
 }
 
-export default function DemoDataBanner({ onRetry }: DemoDataBannerProps) {
+export default function DataSourceBanner({ variant, cachedAt, onRetry }: DataSourceBannerProps) {
+  const chip = variant === 'demo' ? 'DEMO DATA' : 'OFFLINE';
+  const message = variant === 'demo'
+    ? 'Live departures unavailable.'
+    : `Showing data from ${cachedAt != null ? formatTime(new Date(cachedAt)) : 'earlier'}.`;
+
   return (
     <div role="status" style={{
       display: 'flex', alignItems: 'center', gap: 10,
@@ -18,10 +26,10 @@ export default function DemoDataBanner({ onRetry }: DemoDataBannerProps) {
         letterSpacing: '0.06em', background: 'var(--warn-text)', color: 'var(--card)',
         flexShrink: 0,
       }}>
-        DEMO DATA
+        {chip}
       </span>
       <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'var(--warn-text)' }}>
-        Live departures unavailable.
+        {message}
       </span>
       <button onClick={onRetry} style={{
         padding: '4px 10px', borderRadius: 8, fontSize: 12, fontWeight: 700,
