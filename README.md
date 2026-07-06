@@ -16,14 +16,14 @@ Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 
 ## Features
 
-- **Live departures** — real-time train data, refreshed every 60 seconds; falls back to mock data without an API key
+- **Live departures** — real-time train data, refreshed every 60 seconds; falls back to demo data without an API key
 - **Delay anomaly alerts** — compares upcoming trains to your 12-week personal baseline (Rhythm view)
 - **Network disruptions** — live disruptions rendered as weather overlays (storm / fog / sun) on the map
 - **Per-carriage crowding** — platform choreography showing which carriage is quietest and where to stand
 - **Station search** — find any station by name or code; tap any departure to open its journey
 - **Customisable display** — verbosity, crowding style (bars / dots / heatmap), and accent colour, all adjustable at runtime via the Tweaks panel; preferences persist to `localStorage`
 - **Dark / light mode** — OKLCH token system, system-aware
-- **Installable PWA with offline support** — app shell served by a hand-rolled service worker; last departures cached in `localStorage` (1 h TTL) and shown offline with an OFFLINE banner and data timestamp
+- **Installable PWA with offline support** — app shell served by a custom service worker; last departures cached in `localStorage` (1 h TTL) and shown offline with an OFFLINE banner and data timestamp
 - **Rate limiting** — 30 requests/minute per IP (in-memory, no external store needed)
 - **Lighthouse deploy gate** — every Vercel preview is audited in CI; merge (and thus production deploy) is blocked unless Performance ≥ 90 and Accessibility / Best Practices / SEO = 100
 - **Responsive** — mobile bottom tab bar, centered phone frame on tablet, sidebar layout on desktop
@@ -44,7 +44,7 @@ Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 
 ## Architecture
 
-**How it works, in plain words:** the app in your browser asks our own small server for train data. That server fetches it from the Dutch Railways (NS) and passes it on — your browser never talks to NS directly, and the server makes sure nobody can overload it. Everything you see is saved on your device, so if you lose connection the app still opens and shows the last departures it saw, clearly marked as older data. And before any change goes live, an automatic quality check (Google Lighthouse) has to approve it — if the app would get slower or less accessible, the change simply can't ship.
+**How it works:** the app in your browser asks our own small server for train data. That server fetches it from the Dutch Railways (NS) and passes it on — your browser never talks to NS directly, and the server makes sure nobody can overload it. Everything you see is also saved on your device, so if you lose connection the app still opens and shows the last departures it saw, clearly marked as older data. Before any change goes live, an automatic quality check (Google Lighthouse) has to approve it — if the app would become slower or less accessible, the change simply can't ship.
 
 ```mermaid
 graph LR
@@ -57,7 +57,7 @@ graph LR
     APP -->|"asks for departures"| SRV
     SRV -->|"gets live data"| NS
     APP <-->|"keeps a copy"| SAVE
-    GATE -.->|"guards releases of"| APP
+    GATE -.->|"approves every release"| APP
 
     style APP fill:#e8f4f8,stroke:#bee5eb
     style SRV fill:#f8f9fa,stroke:#dee2e6
@@ -66,7 +66,7 @@ graph LR
     style GATE fill:#e2e3f1,stroke:#6c757d
 ```
 
-### For developers: the detailed map
+### Under the hood
 
 ```mermaid
 graph TB
@@ -165,7 +165,7 @@ npm run build    # production build + type check
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `NS_API` | No | API key. Without a key the app falls back to mock data; all views still work. |
+| `NS_API` | No | API key. Without a key the app falls back to demo data; all views still work. |
 
 ---
 
@@ -184,7 +184,7 @@ Live departures for a station code (e.g. `ASD` for Amsterdam Centraal). Returns 
 
 ### `GET /api/disruptions`
 
-Active disruptions. Falls back to generated mock data if the upstream API is unavailable. Cached for 60 seconds.
+Active disruptions. Falls back to generated demo data if the upstream API is unavailable. Cached for 60 seconds.
 
 **Errors:**
 
@@ -243,7 +243,8 @@ app/
 │   └── mock.ts                  Mock data generators for offline / keyless use
 ├── api/
 │   ├── departures/[code]/       Live departures for a station
-│   ├── disruptions/             Live disruptions, falls back to mock
+│   ├── disruptions/             Live disruptions, falls back to demo data
+│   ├── journey/[trainId]/       Stop timeline for a train
 │   └── stations/                Station search
 └── interfaces/                  Shared TypeScript interfaces
 
