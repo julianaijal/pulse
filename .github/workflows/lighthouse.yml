@@ -1,0 +1,19 @@
+name: Lighthouse
+
+on:
+  deployment_status:
+
+jobs:
+  lighthouse:
+    # Only audit successful Vercel *preview* deployments; production deploy
+    # events are skipped. Note: deployment_status workflows only trigger once
+    # this file is on the default branch.
+    if: github.event.deployment_status.state == 'success' && startsWith(github.event.deployment.environment, 'Preview')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run Lighthouse CI
+        run: npx --yes @lhci/cli@0.15.x autorun --collect.url="${{ github.event.deployment_status.target_url }}"
