@@ -60,6 +60,15 @@ Only `/` is audited — the app is a single view with no other user-facing route
    the preview is publicly reachable first; if protected, stop and present
    options (disable protection for previews, or a
    `x-vercel-protection-bypass` secret).
+
+   *Resolved during implementation (user-approved):* previews are protected;
+   a Protection Bypass for Automation secret was generated and stored as the
+   `VERCEL_AUTOMATION_BYPASS_SECRET` GitHub Actions secret. The workflow sends
+   it via `extraHeaders` together with `x-vercel-set-bypass-cookie: true` so
+   sub-requests pass too. Two preview-only environment fixes came out of the
+   baseline: `NS_API` now also targets Preview (the keyless API 401 was
+   failing Best Practices), and the CSP allows the Vercel toolbar
+   (`vercel.live`) on preview builds only — production CSP is unchanged.
 3. **Enforcement.** Add the Lighthouse job as a required status check on
    `master` branch protection via `gh api`.
 
