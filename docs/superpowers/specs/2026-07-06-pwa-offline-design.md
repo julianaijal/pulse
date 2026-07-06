@@ -68,9 +68,11 @@ same-origin SW.
 
 **Dependency cleanup:** remove `next-pwa` from `package.json`.
 
-**Known limitation:** without a build-time precache manifest, the offline
-shell works from the second visit onward (assets are cached as they are first
-fetched). Accepted trade-off of the no-dependency approach.
+**Known limitation:** without a build-time precache manifest, only the shell
+HTML is pre-cached at install; its hashed JS/CSS assets are cached as they
+are first fetched. Full offline rendering therefore works after one normal
+page load has populated the asset cache. Accepted trade-off of the
+no-dependency approach.
 
 ## 3. Data caching (departures only)
 
