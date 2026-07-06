@@ -4,6 +4,7 @@ import './globals.css';
 import AnalyticsWrapper from './_lib/Analytics';
 import WebVitals from './_lib/WebVitals';
 import SkipNav from './_lib/SkipNav';
+import RegisterSW from './_lib/RegisterSW';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
         <AnalyticsWrapper />
         <WebVitals />
+        <RegisterSW />
       </body>
     </html>
   );
