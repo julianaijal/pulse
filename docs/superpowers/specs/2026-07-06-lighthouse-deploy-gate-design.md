@@ -33,14 +33,17 @@ PR push → Vercel builds preview → deployment_status: success (environment: P
   `github.event.deployment_status.target_url`.
 
 ### `lighthouserc.json` (repo root)
-- `collect`: `numberOfRuns: 3`, URL injected from the workflow.
+- `collect`: `numberOfRuns: 3`, URL injected from the workflow, and
+  `settings.skipAudits: ["is-crawlable"]` — Vercel previews send
+  `X-Robots-Tag: noindex`, which would cap the SEO score below 100 on every
+  preview. Skipping the audit at collection time excludes it from the SEO
+  category score (merely disabling its assertion would not). Production is
+  unaffected.
 - `assert` (`aggregationMethod: median-run`, all error level):
   - `categories:performance` ≥ 0.90
   - `categories:accessibility` = 1.0
   - `categories:best-practices` = 1.0
   - `categories:seo` = 1.0
-  - `is-crawlable: off` — Vercel previews send `X-Robots-Tag: noindex`, which
-    would cap SEO below 100 on every preview. Production is unaffected.
 - `upload`: `temporary-public-storage` — each run prints a shareable HTML
   report link in the CI log; no LHCI server to host.
 
