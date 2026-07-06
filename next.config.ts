@@ -1,5 +1,10 @@
 import type { NextConfig } from "next";
 
+// Vercel preview deployments inject the Vercel Toolbar (preview comments)
+// from vercel.live. Allow it on previews only — production CSP is unchanged.
+// Directives per https://vercel.com/docs/vercel-toolbar (CSP section).
+const isVercelPreview = process.env.VERCEL_ENV === "preview";
+
 const securityHeaders = [
   {
     key: "X-Frame-Options",
@@ -32,11 +37,12 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' va.vercel-scripts.com",
-      "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
-      "font-src 'self' fonts.gstatic.com",
-      "img-src 'self' data:",
-      "connect-src 'self' vitals.vercel-insights.com",
+      `script-src 'self' 'unsafe-inline' va.vercel-scripts.com${isVercelPreview ? " vercel.live" : ""}`,
+      `style-src 'self' 'unsafe-inline' fonts.googleapis.com${isVercelPreview ? " vercel.live" : ""}`,
+      `font-src 'self' fonts.gstatic.com${isVercelPreview ? " vercel.live assets.vercel.com" : ""}`,
+      `img-src 'self' data:${isVercelPreview ? " vercel.live vercel.com blob:" : ""}`,
+      `connect-src 'self' vitals.vercel-insights.com${isVercelPreview ? " vercel.live wss://ws-us3.pusher.com" : ""}`,
+      ...(isVercelPreview ? ["frame-src vercel.live"] : []),
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

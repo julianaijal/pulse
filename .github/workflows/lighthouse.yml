@@ -1,0 +1,30 @@
+name: Lighthouse
+
+on:
+  deployment_status:
+
+jobs:
+  lighthouse:
+    # Only audit successful Vercel *preview* deployments; production deploy
+    # events are skipped. Note: deployment_status workflows only trigger once
+    # this file is on the default branch.
+    if: github.event.deployment_status.state == 'success' && startsWith(github.event.deployment.environment, 'Preview')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run Lighthouse CI
+        env:
+          PREVIEW_URL: ${{ github.event.deployment_status.target_url }}
+          # Vercel Deployment Protection is enabled for previews; this
+          # Protection Bypass for Automation secret lets Lighthouse through.
+          VERCEL_BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        # set-bypass-cookie makes the first response set a _vercel_jwt cookie
+        # so sub-requests without extra headers (robots.txt fetch, page XHRs)
+        # also pass Deployment Protection.
+        run: >
+          npx --yes @lhci/cli@0.15.x autorun
+          --collect.url="$PREVIEW_URL"
+          --collect.settings.extraHeaders="{\"x-vercel-protection-bypass\":\"$VERCEL_BYPASS\",\"x-vercel-set-bypass-cookie\":\"true\"}"
