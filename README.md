@@ -42,6 +42,76 @@ Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 
 ---
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph Client["Browser (installable PWA)"]
+        TAB["TabBar"]
+        RV["RhythmView"]
+        PV["PulseView"]
+        SV["StationView"]
+        JV["JourneyView"]
+        UD["useDepartures<br/><small>poll 60 s · live → cached → demo</small>"]
+        UJ["useJourney"]
+        DC["dataCache<br/><small>localStorage · 1 h TTL</small>"]
+        BAN["DataSourceBanner<br/><small>DEMO / OFFLINE + timestamp</small>"]
+        SW["sw.js<br/><small>app-shell cache · /api/* passthrough</small>"]
+        TAB --> RV
+        TAB --> PV
+        TAB --> SV
+        TAB --> JV
+        RV --> UD
+        SV --> UD
+        JV --> UJ
+        UD --> DC
+        UD --> BAN
+    end
+
+    subgraph Server["Next.js API routes"]
+        DEP["/api/departures/[code]<br/><small>60 s revalidate</small>"]
+        DIS["/api/disruptions<br/><small>60 s revalidate · mock fallback</small>"]
+        STA["/api/stations?q=<br/><small>station search</small>"]
+        JRN["/api/journey/[trainId]<br/><small>60 s revalidate</small>"]
+        RL["rateLimit<br/><small>in-memory LRU · 30 req/min/IP</small>"]
+        MOCK["mock.ts<br/><small>generated demo data</small>"]
+    end
+
+    subgraph External["External"]
+        NS["NS API<br/><small>departures · disruptions · journeys</small>"]
+        VA["Vercel Analytics<br/><small>+ Web Vitals</small>"]
+    end
+
+    subgraph CICD["CI / deploy"]
+        GHA["GitHub Actions<br/><small>ci + lighthouse (required checks)</small>"]
+        VER["Vercel<br/><small>preview → Lighthouse gate → production</small>"]
+        GHA --> VER
+    end
+
+    UD -->|"fetch"| DEP
+    UJ -->|"fetch"| JRN
+    PV -->|"fetch"| DIS
+    SV -->|"search"| STA
+    SW -.->|"caches shell"| Client
+    DEP --> RL
+    DIS --> RL
+    STA --> RL
+    JRN --> RL
+    DEP --> NS
+    DIS --> NS
+    STA --> NS
+    JRN --> NS
+    DIS -.->|"upstream down"| MOCK
+    Client --> VA
+
+    style Client fill:#f8f9fa,stroke:#dee2e6
+    style Server fill:#e8f4f8,stroke:#bee5eb
+    style External fill:#f8d7da,stroke:#dc3545
+    style CICD fill:#fff3cd,stroke:#ffc107
+```
+
+---
+
 ## Stack
 
 | Layer | Technology |
@@ -79,7 +149,7 @@ npm run build    # production build + type check
 
 ### `GET /api/departures/[code]`
 
-Live departures for a station code (e.g. `ASD` for Amsterdam Centraal). Returns up to 15 departures with delay, track, and cancellation info. Cached for 30 seconds.
+Live departures for a station code (e.g. `ASD` for Amsterdam Centraal). Returns up to 15 departures with delay, track, and cancellation info. Cached for 60 seconds.
 
 **Errors:**
 
@@ -106,6 +176,17 @@ Station search (minimum 2 characters). Proxies the upstream station list.
 
 | Status | Cause |
 |--------|-------|
+| `429` | Rate limit exceeded (30 req/min) |
+
+### `GET /api/journey/[trainId]`
+
+Stop timeline for a train number (1–6 digits): planned vs. actual times, track, and crowd forecast per stop. Passing stops are filtered out. Cached for 60 seconds.
+
+**Errors:**
+
+| Status | Cause |
+|--------|-------|
+| `400` | Invalid train number format |
 | `429` | Rate limit exceeded (30 req/min) |
 
 ---
