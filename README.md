@@ -44,6 +44,30 @@ Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 
 ## Architecture
 
+**How it works, in plain words:** the app in your browser asks our own small server for train data. That server fetches it from the Dutch Railways (NS) and passes it on — your browser never talks to NS directly, and the server makes sure nobody can overload it. Everything you see is saved on your device, so if you lose connection the app still opens and shows the last departures it saw, clearly marked as older data. And before any change goes live, an automatic quality check (Google Lighthouse) has to approve it — if the app would get slower or less accessible, the change simply can't ship.
+
+```mermaid
+graph LR
+    APP["📱 The app<br/>on your phone or laptop"]
+    SRV["🚉 Pulse server<br/>fetches & filters train data"]
+    NS["🚂 Dutch Railways (NS)<br/>live train data"]
+    SAVE["💾 Saved on your device<br/>works offline"]
+    GATE["✅ Quality gate<br/>every change must pass<br/>speed & accessibility checks"]
+
+    APP -->|"asks for departures"| SRV
+    SRV -->|"gets live data"| NS
+    APP <-->|"keeps a copy"| SAVE
+    GATE -.->|"guards releases of"| APP
+
+    style APP fill:#e8f4f8,stroke:#bee5eb
+    style SRV fill:#f8f9fa,stroke:#dee2e6
+    style NS fill:#fff3cd,stroke:#ffc107
+    style SAVE fill:#d4edda,stroke:#28a745
+    style GATE fill:#e2e3f1,stroke:#6c757d
+```
+
+### For developers: the detailed map
+
 ```mermaid
 graph TB
     subgraph Client["Browser (installable PWA)"]
