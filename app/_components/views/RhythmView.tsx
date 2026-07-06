@@ -8,7 +8,7 @@ import { IconSwap } from '../icons/Icons';
 import CrowdingStrip from '../shared/CrowdingStrip';
 import DepartureRow from '../shared/DepartureRow';
 import NowPill from '../shared/NowPill';
-import DemoDataBanner from '../shared/DemoDataBanner';
+import DataSourceBanner from '../shared/DataSourceBanner';
 
 interface RhythmViewProps {
   tweaks: ITweaks;
@@ -30,7 +30,7 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
   const home = homeStation ?? { code: 'ASD', name: 'Amsterdam Centraal' };
   const work = workStation ?? { code: 'UT', name: 'Utrecht Centraal' };
   const [now, setNow] = useState(new Date());
-  const { departures, source, retry } = useDepartures(home.code);
+  const { departures, source, cachedAt, retry } = useDepartures(home.code);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15000);
@@ -86,10 +86,10 @@ export default function RhythmView({ tweaks, homeStation, workStation, onOpenJou
         {departures ? `${departures.length} departures loaded` : ''}
       </div>
 
-      {/* Demo-data notice */}
-      {source === 'demo' && (
+      {/* Stale/demo-data notice */}
+      {(source === 'demo' || source === 'cached') && (
         <div style={{ padding: '0 18px 12px' }}>
-          <DemoDataBanner onRetry={retry} />
+          <DataSourceBanner variant={source} cachedAt={cachedAt} onRetry={retry} />
         </div>
       )}
 
