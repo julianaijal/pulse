@@ -5,6 +5,8 @@ A transit companion for daily commuters on the Dutch rail network. Goes beyond d
 Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 
 [![Live on Vercel](https://img.shields.io/github/deployments/julianaijal/pulse/production?label=live&logo=vercel&logoColor=white)](https://transit-blush.vercel.app)
+![CI](https://img.shields.io/github/actions/workflow/status/julianaijal/pulse/ci.yml?label=ci&logo=githubactions&logoColor=white)
+![Lighthouse](https://img.shields.io/github/actions/workflow/status/julianaijal/pulse/lighthouse.yml?label=lighthouse&logo=lighthouse&logoColor=white)
 ![Last updated](https://img.shields.io/github/last-commit/julianaijal/pulse?label=updated)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs&logoColor=white)
 ![React 19](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=white)
@@ -14,15 +16,16 @@ Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 
 ## Features
 
-- **Live departures** — real-time train data, refreshed every 30 seconds; falls back to mock data without an API key
+- **Live departures** — real-time train data, refreshed every 60 seconds; falls back to mock data without an API key
 - **Delay anomaly alerts** — compares upcoming trains to your 12-week personal baseline (Rhythm view)
 - **Network disruptions** — live disruptions rendered as weather overlays (storm / fog / sun) on the map
 - **Per-carriage crowding** — platform choreography showing which carriage is quietest and where to stand
 - **Station search** — find any station by name or code; tap any departure to open its journey
 - **Customisable display** — verbosity, crowding style (bars / dots / heatmap), and accent colour, all adjustable at runtime via the Tweaks panel; preferences persist to `localStorage`
 - **Dark / light mode** — OKLCH token system, system-aware
-- **PWA-ready** — installable with standalone display mode and full icon set
+- **Installable PWA with offline support** — app shell served by a hand-rolled service worker; last departures cached in `localStorage` (1 h TTL) and shown offline with an OFFLINE banner and data timestamp
 - **Rate limiting** — 30 requests/minute per IP (in-memory, no external store needed)
+- **Lighthouse deploy gate** — every Vercel preview is audited in CI; merge (and thus production deploy) is blocked unless Performance ≥ 90 and Accessibility / Best Practices / SEO = 100
 - **Responsive** — mobile bottom tab bar, centered phone frame on tablet, sidebar layout on desktop
 
 ---
@@ -50,6 +53,8 @@ Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 | Hosting | [Vercel](https://vercel.com) |
 | Rate Limiting | In-memory LRU cache (30 req/min per IP) |
 | Analytics | Vercel Analytics + Web Vitals |
+| Offline | Service worker app shell + `localStorage` departures cache |
+| Quality gate | Lighthouse CI on every Vercel preview (required check) |
 
 ---
 
@@ -58,6 +63,7 @@ Live at **[transit-blush.vercel.app](https://transit-blush.vercel.app)**
 ```bash
 npm install
 npm run dev      # http://localhost:3000
+npm test         # vitest
 npm run build    # production build + type check
 ```
 
@@ -118,18 +124,28 @@ app/
 │   ├── shared/                  Reusable display components (DepartureRow, NowPill, CrowdingStrip, …)
 │   ├── icons/                   SVG icon components
 │   └── _partials/               Internal UI fragments (Loader, …)
+├── _hooks/
+│   ├── useDepartures.ts         Departures polling with live → cached → demo fallback
+│   └── useJourney.ts            Journey detail data
 ├── _lib/
 │   ├── rateLimit.ts             In-memory LRU rate limiter (30 req/min per IP)
 │   ├── Analytics.tsx            Vercel Analytics wrapper
+│   ├── RegisterSW.tsx           Service worker registration (production only)
 │   └── WebVitals.tsx            Web Vitals reporting
 ├── _utils/
 │   ├── api.tsx                  API client (getStationCodes)
+│   ├── dataCache.ts             localStorage cache with TTL for offline departures
 │   └── mock.ts                  Mock data generators for offline / keyless use
 ├── api/
 │   ├── departures/[code]/       Live departures for a station
 │   ├── disruptions/             Live disruptions, falls back to mock
 │   └── stations/                Station search
 └── interfaces/                  Shared TypeScript interfaces
+
+public/
+├── sw.js                        App-shell service worker (assets cache-first, navigations network-first)
+├── manifest.json                PWA manifest
+└── favicon/                     App icons (incl. maskable)
 ```
 
 ---
