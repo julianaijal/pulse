@@ -4,6 +4,7 @@ export interface IStation {
   code: string;
   lat?: number;
   lng?: number;
+  stationType?: 'MEGA_STATION' | 'KNOOPPUNT_INTERCITY_STATION' | 'INTERCITY_STATION' | 'KNOOPPUNT_SNELTREIN_STATION' | 'SNELTREIN_STATION' | 'KNOOPPUNT_STOPTREIN_STATION' | 'STOPTREIN_STATION' | 'FACULTATIEF_STATION';
 }
 
 export interface CommuteStation {
