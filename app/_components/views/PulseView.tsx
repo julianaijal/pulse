@@ -33,12 +33,29 @@ function currentLOD(zoom: number): number {
 
 type Filter = 'all' | 'ic' | 'spr' | 'delayed';
 
+// Landmark stations always labeled regardless of zoom
+const LANDMARKS = new Set(['ASD', 'UT', 'RTD', 'GVC', 'EHV', 'GN']);
+
+// Simple label collision detection: greedy placement, skip overlapping labels
+interface LabelRect { x: number; y: number; w: number; h: number }
+function labelsOverlap(a: LabelRect, b: LabelRect): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+const ONBOARDING_KEY = 'pulse.mapOnboarded';
+
 export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewProps) {
   const { stations } = useStations();
   const [trains, setTrains] = useState<IActiveTrain[]>(() => generateActiveTrains(40));
   const [disruptions, setDisruptions] = useState<IDisruption[]>(() => generateDisruptions());
   const [selected, setSelected] = useState<IActiveTrain | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
+  const [hoveredStation, setHoveredStation] = useState<string | null>(null);
+  const [hoveredTrain, setHoveredTrain] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !localStorage.getItem(ONBOARDING_KEY);
+  });
   const rafRef = useRef<number | null>(null);
   const lastTsRef = useRef<number>(0);
 
@@ -122,12 +139,18 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
     return () => { mq.removeEventListener('change', sync); stop(); };
   }, []);
 
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+    localStorage.setItem(ONBOARDING_KEY, '1');
+  }, []);
+
   // Mouse wheel zoom
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     const delta = -e.deltaY * 0.002;
     setZoom(z => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z * (1 + delta))));
-  }, []);
+    dismissOnboarding();
+  }, [dismissOnboarding]);
 
   // Mouse drag pan
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -171,6 +194,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
       const dist = Math.sqrt(dx * dx + dy * dy);
       const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, pinchRef.current.zoom * (dist / pinchRef.current.dist)));
       setZoom(newZoom);
+      dismissOnboarding();
     } else if (e.touches.length === 1 && dragRef.current) {
       const svg = svgRef.current;
       if (!svg) return;
@@ -181,7 +205,7 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
       const dy = -(e.touches[0].clientY - dragRef.current.startY) * scaleY;
       setPan({ x: dragRef.current.startPanX + dx, y: dragRef.current.startPanY + dy });
     }
-  }, [zoom]);
+  }, [zoom, dismissOnboarding]);
 
   const handleTouchEnd = useCallback(() => {
     dragRef.current = null;
@@ -196,7 +220,8 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
       if (next === MIN_ZOOM) setPan({ x: 0, y: 0 });
       return next;
     });
-  }, []);
+    dismissOnboarding();
+  }, [dismissOnboarding]);
 
   const filteredTrains = trains.filter(tr => {
     if (filter === 'ic') return tr.cat === 'IC' || tr.cat === 'ICD';
@@ -311,45 +336,91 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                 );
               })}
 
-              {/* Stations (virtualized: only render visible at current LOD) */}
-              {Array.from(layout.entries()).map(([code, pos]) => {
-                const s = stationByCode.get(code);
-                const zl = stationZoomLevel(s?.stationType);
-                if (zl > lod) return null;
+              {/* Stations (virtualized: only render visible at current LOD, with collision-aware labels) */}
+              {(() => {
+                const placed: LabelRect[] = [];
+                // Sort: landmarks and interchanges first so they claim label space
+                const entries = Array.from(layout.entries()).sort(([codeA, ], [codeB, ]) => {
+                  const sa = stationByCode.get(codeA);
+                  const sb = stationByCode.get(codeB);
+                  const pa = LANDMARKS.has(codeA) ? 0 : sa?.stationType === 'MEGA_STATION' ? 1 : sa?.stationType?.includes('KNOOPPUNT') ? 2 : 3;
+                  const pb = LANDMARKS.has(codeB) ? 0 : sb?.stationType === 'MEGA_STATION' ? 1 : sb?.stationType?.includes('KNOOPPUNT') ? 2 : 3;
+                  return pa - pb;
+                });
 
-                // Viewport culling
-                if (pos.x < vx - 50 || pos.x > vx + vw + 50 || pos.y < vy - 50 || pos.y > vy + vh + 50) return null;
+                return entries.map(([code, pos]) => {
+                  const s = stationByCode.get(code);
+                  const zl = stationZoomLevel(s?.stationType);
+                  const isLandmark = LANDMARKS.has(code);
+                  // Landmarks always visible; others follow LOD
+                  if (!isLandmark && zl > lod) return null;
 
-                const r = stationRadius(s?.stationType) / zoom;
-                const isInterchange = s?.stationType?.includes('KNOOPPUNT') || s?.stationType === 'MEGA_STATION';
-                const showLabel = zl <= lod && (isInterchange || lod >= 3);
-                const fontSize = Math.max(6, 10 / zoom);
-                const hitR = Math.max(r * 2, 12 / zoom);
+                  // Viewport culling
+                  if (pos.x < vx - 50 || pos.x > vx + vw + 50 || pos.y < vy - 50 || pos.y > vy + vh + 50) return null;
 
-                return (
-                  <g key={code}
-                    role="button" tabIndex={0}
-                    aria-label={`Station ${s?.name ?? code}`}
-                    style={{ cursor: 'pointer' }}
-                    onClick={(e) => { e.stopPropagation(); if (s) onOpenStation(s); }}
-                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && s) { e.preventDefault(); onOpenStation(s); } }}
-                  >
-                    <circle cx={pos.x} cy={pos.y} r={hitR} fill="transparent" />
-                    {isInterchange ? (
-                      <>
-                        <circle cx={pos.x} cy={pos.y} r={r} fill="var(--card)" stroke="var(--ink)" strokeWidth={1.5 / zoom} style={{ pointerEvents: 'none' }} />
-                      </>
-                    ) : (
-                      <circle cx={pos.x} cy={pos.y} r={r} fill="var(--ink)" style={{ pointerEvents: 'none' }} />
-                    )}
-                    {showLabel && (
-                      <text x={pos.x + r + 4 / zoom} y={pos.y + fontSize * 0.35} fontSize={fontSize} fontWeight={isInterchange ? 700 : 500} fill="var(--ink)" style={{ pointerEvents: 'none' }}>
-                        {s?.name?.replace(' Centraal', ' C').replace('Amsterdam ', 'A\'dam ').replace('Rotterdam ', 'R\'dam ').replace('Den Haag ', 'DH ') ?? code}
-                      </text>
-                    )}
-                  </g>
-                );
-              })}
+                  const r = stationRadius(s?.stationType) / zoom;
+                  const isInterchange = s?.stationType?.includes('KNOOPPUNT') || s?.stationType === 'MEGA_STATION';
+                  const wantsLabel = isLandmark || (zl <= lod && (isInterchange || lod >= 3));
+                  const fontSize = Math.max(6, 10 / zoom);
+                  const hitR = Math.max(r * 2, 12 / zoom);
+                  const isHovered = hoveredStation === code;
+
+                  // Label collision check
+                  let showLabel = false;
+                  const labelText = s?.name?.replace(' Centraal', ' C').replace('Amsterdam ', "A'dam ").replace('Rotterdam ', "R'dam ").replace('Den Haag ', 'DH ') ?? code;
+                  if (wantsLabel) {
+                    const labelW = labelText.length * fontSize * 0.55;
+                    const labelH = fontSize * 1.2;
+                    const labelX = pos.x + r + 4 / zoom;
+                    const labelY = pos.y - labelH * 0.5;
+                    const rect: LabelRect = { x: labelX, y: labelY, w: labelW, h: labelH };
+                    const collides = placed.some(p => labelsOverlap(p, rect));
+                    if (!collides || isLandmark) {
+                      showLabel = true;
+                      placed.push(rect);
+                    }
+                  }
+
+                  return (
+                    <g key={code}
+                      role="button" tabIndex={0}
+                      aria-label={`Station ${s?.name ?? code}`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={(e) => { e.stopPropagation(); if (s) onOpenStation(s); }}
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && s) { e.preventDefault(); onOpenStation(s); } }}
+                      onPointerEnter={() => setHoveredStation(code)}
+                      onPointerLeave={() => setHoveredStation(prev => prev === code ? null : prev)}
+                      onFocus={() => setHoveredStation(code)}
+                      onBlur={() => setHoveredStation(prev => prev === code ? null : prev)}
+                    >
+                      <circle cx={pos.x} cy={pos.y} r={hitR} fill="transparent" />
+                      {/* Hover/focus ring */}
+                      {isHovered && (
+                        <circle cx={pos.x} cy={pos.y} r={r + 3 / zoom} fill="none" stroke="var(--primary)" strokeWidth={1.5 / zoom} opacity={0.6} style={{ pointerEvents: 'none' }} />
+                      )}
+                      {isInterchange ? (
+                        <circle cx={pos.x} cy={pos.y} r={r} fill="var(--card)" stroke={isHovered ? 'var(--primary)' : 'var(--ink)'} strokeWidth={1.5 / zoom} style={{ pointerEvents: 'none' }} />
+                      ) : (
+                        <circle cx={pos.x} cy={pos.y} r={r} fill={isHovered ? 'var(--primary)' : 'var(--ink)'} style={{ pointerEvents: 'none' }} />
+                      )}
+                      {showLabel && (
+                        <text x={pos.x + r + 4 / zoom} y={pos.y + fontSize * 0.35} fontSize={fontSize} fontWeight={isInterchange || isLandmark ? 700 : 500} fill="var(--ink)" style={{ pointerEvents: 'none' }}>
+                          {labelText}
+                        </text>
+                      )}
+                      {/* Tooltip on hover when label is hidden */}
+                      {isHovered && !showLabel && (
+                        <g style={{ pointerEvents: 'none' }}>
+                          <rect x={pos.x - (labelText.length * fontSize * 0.55) / 2} y={pos.y - r - fontSize * 1.8} width={labelText.length * fontSize * 0.55 + 6 / zoom} height={fontSize * 1.4} rx={3 / zoom} fill="var(--ink)" opacity={0.85} />
+                          <text x={pos.x + 3 / zoom} y={pos.y - r - fontSize * 0.65} fontSize={fontSize} fontWeight={600} fill="var(--card)" textAnchor="middle" style={{ pointerEvents: 'none' }}>
+                            {labelText}
+                          </text>
+                        </g>
+                      )}
+                    </g>
+                  );
+                });
+              })()}
 
               {/* Trains */}
               {filteredTrains.map(tr => {
@@ -361,7 +432,10 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                 if (x < vx - 20 || x > vx + vw + 20 || y < vy - 20 || y > vy + vh + 20) return null;
                 const isDelayed = tr.delayMin >= 3;
                 const isSel = selected?.id === tr.id;
+                const isTrainHovered = hoveredTrain === tr.id;
                 const trainR = 4.5 / zoom;
+                const trainLabel = `${tr.cat} → ${tr.to.name}${isDelayed ? ` (+${tr.delayMin})` : ''}`;
+                const trainFontSize = Math.max(6, 9 / zoom);
                 return (
                   <g key={tr.id}
                     role="button" tabIndex={0}
@@ -369,12 +443,23 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                     style={{ cursor: 'pointer' }}
                     onClick={(e) => { e.stopPropagation(); setSelected(tr); }}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(tr); } }}
+                    onPointerEnter={() => setHoveredTrain(tr.id)}
+                    onPointerLeave={() => setHoveredTrain(prev => prev === tr.id ? null : prev)}
                   >
                     <circle cx={x} cy={y} r={12 / zoom} fill="transparent" />
                     <circle cx={x} cy={y} r={trainR}
                       fill={isDelayed ? 'var(--warn)' : 'var(--primary)'}
                       stroke="#FFFFFF" strokeWidth={1.5 / zoom} style={{ pointerEvents: 'none' }} />
-                    {isSel && <circle cx={x} cy={y} r={10 / zoom} fill="none" stroke={isDelayed ? 'var(--warn)' : 'var(--primary)'} strokeWidth={1.5 / zoom} />}
+                    {(isSel || isTrainHovered) && <circle cx={x} cy={y} r={10 / zoom} fill="none" stroke={isDelayed ? 'var(--warn)' : 'var(--primary)'} strokeWidth={1.5 / zoom} />}
+                    {/* Train tooltip on hover */}
+                    {isTrainHovered && !isSel && (
+                      <g style={{ pointerEvents: 'none' }}>
+                        <rect x={x + 8 / zoom} y={y - trainFontSize * 1.1} width={trainLabel.length * trainFontSize * 0.55 + 8 / zoom} height={trainFontSize * 1.5} rx={3 / zoom} fill={isDelayed ? 'var(--warn)' : 'var(--primary)'} opacity={0.9} />
+                        <text x={x + 12 / zoom} y={y + trainFontSize * 0.1} fontSize={trainFontSize} fontWeight={700} fill="#FFFFFF">
+                          {trainLabel}
+                        </text>
+                      </g>
+                    )}
                   </g>
                 );
               })}
@@ -389,6 +474,21 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
                 </g>
               )}
             </svg>
+
+            {/* Onboarding hint */}
+            {showOnboarding && (
+              <div
+                onClick={dismissOnboarding}
+                style={{
+                  position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
+                  background: 'var(--ink)', color: '#FFFFFF', padding: '8px 16px',
+                  borderRadius: 999, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+                  opacity: 0.85, cursor: 'pointer', animation: 'fadeUp 0.4s',
+                }}
+              >
+                Pinch or scroll to explore all stations
+              </div>
+            )}
 
             {/* Selected train card */}
             {selected && (
