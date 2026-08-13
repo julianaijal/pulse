@@ -6,6 +6,7 @@ import { generateActiveTrains, generateDisruptions } from '../../_utils/mock';
 import { useStations } from '../../_hooks/useStations';
 import { buildSchematicLayout, stationZoomLevel, stationRadius } from '../../_utils/schematic';
 import { CORRIDORS } from '../../_data/corridors';
+import { NORTH_SEA, IJSSELMEER, WADDEN_SEA, WADDEN_ISLANDS, ZEELAND_CHANNELS, LAND_BORDER } from '../../_data/nl-geography';
 import { IconClose, IconArrow } from '../icons/Icons';
 import NowPill from '../shared/NowPill';
 
@@ -20,8 +21,8 @@ const FULL_H = 1400;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 6;
 
-// Simplified NL silhouette (original viewBox 420×540, will be transformed to fit schematic grid)
-const NL_PATH = 'M5.3,443.6 L21,385.7 L42,376.1 L94.5,405 L136.5,395.4 L183.8,395.4 L199.5,443.6 L262.5,520.7 L294,511.1 L283.5,443.6 L304.5,385.7 L325.5,318.2 L399,241.1 L409.5,173.6 L367.5,106.1 L383.3,57.9 L409.5,38.6 L357,0 L273,9.6 L199.5,19.3 L147,77.1 L183.8,125.4 L152.3,192.9 L131.3,221.8 L94.5,270 L63,337.5 L21,376.1 Z';
+// Water color for geographic context
+const WATER_COLOR = '#0077B6';
 
 // Zoom level thresholds for LOD
 function currentLOD(zoom: number): number {
@@ -308,10 +309,29 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
               onTouchEnd={handleTouchEnd}
               onDoubleClick={handleDoubleClick}
             >
-              {/* NL silhouette (subtle background) */}
-              <g transform="translate(80, 50) scale(1.55, 2.15)" opacity={0.07}>
-                <path d={NL_PATH} fill="var(--ink)" stroke="none" />
+              {/* Geographic context: water bodies as negative space */}
+              <g opacity={0.12}>
+                {/* North Sea (west coast) */}
+                <path d={NORTH_SEA} fill={WATER_COLOR} />
+                {/* Waddenzee (north) */}
+                <path d={WADDEN_SEA} fill={WATER_COLOR} />
+                {/* IJsselmeer / Markermeer (central inland sea) */}
+                <path d={IJSSELMEER} fill={WATER_COLOR} />
+                {/* Zeeland delta channels */}
+                {ZEELAND_CHANNELS.map((ch, i) => (
+                  <path key={`zc-${i}`} d={ch} fill={WATER_COLOR} />
+                ))}
               </g>
+
+              {/* Wadden Islands (decorative) */}
+              <g opacity={0.06}>
+                {WADDEN_ISLANDS.map((isle, i) => (
+                  <rect key={`wi-${i}`} x={isle.x} y={isle.y} width={isle.w} height={isle.h} rx={3} fill="var(--ink)" />
+                ))}
+              </g>
+
+              {/* Land border (east/south, dashed) */}
+              <path d={LAND_BORDER} fill="none" stroke="var(--ink)" strokeWidth={1} strokeDasharray="6,4" opacity={0.08} />
 
               {/* Corridor lines */}
               {visibleCorridors.map(corridor => {
