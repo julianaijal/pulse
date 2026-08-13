@@ -186,7 +186,6 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
   }, []);
 
   // Double-tap to zoom
-  const lastTapRef = useRef(0);
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setZoom(z => {
