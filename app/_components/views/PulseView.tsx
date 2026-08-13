@@ -20,6 +20,9 @@ const FULL_H = 1400;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 6;
 
+// Simplified NL silhouette (original viewBox 420×540, will be transformed to fit schematic grid)
+const NL_PATH = 'M5.3,443.6 L21,385.7 L42,376.1 L94.5,405 L136.5,395.4 L183.8,395.4 L199.5,443.6 L262.5,520.7 L294,511.1 L283.5,443.6 L304.5,385.7 L325.5,318.2 L399,241.1 L409.5,173.6 L367.5,106.1 L383.3,57.9 L409.5,38.6 L357,0 L273,9.6 L199.5,19.3 L147,77.1 L183.8,125.4 L152.3,192.9 L131.3,221.8 L94.5,270 L63,337.5 L21,376.1 Z';
+
 // Zoom level thresholds for LOD
 function currentLOD(zoom: number): number {
   if (zoom >= 5) return 4;
@@ -280,6 +283,11 @@ export default function PulseView({ onOpenJourney, onOpenStation }: PulseViewPro
               onTouchEnd={handleTouchEnd}
               onDoubleClick={handleDoubleClick}
             >
+              {/* NL silhouette (subtle background) */}
+              <g transform="translate(80, 50) scale(1.55, 2.15)" opacity={0.07}>
+                <path d={NL_PATH} fill="var(--ink)" stroke="none" />
+              </g>
+
               {/* Corridor lines */}
               {visibleCorridors.map(corridor => {
                 const points: [number, number][] = [];
